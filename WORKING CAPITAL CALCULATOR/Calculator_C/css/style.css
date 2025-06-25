@@ -462,6 +462,64 @@ body {
     border-radius: 12px;
     padding: 24px;
     min-height: 300px;
+    overflow-x: auto;
+}
+
+/* Cash Flow Table Styles */
+.cash-flow-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.cash-flow-table thead {
+    background-color: var(--secondary-dark);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.cash-flow-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--accent-primary);
+    border-bottom: 2px solid var(--accent-secondary);
+}
+
+.cash-flow-table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(69, 162, 158, 0.2);
+}
+
+.cash-flow-table tbody tr:hover {
+    background-color: rgba(69, 162, 158, 0.1);
+}
+
+.cash-flow-table .amount {
+    text-align: right;
+    font-family: 'Courier New', monospace;
+    font-weight: 500;
+}
+
+.cash-flow-table .amount.positive {
+    color: var(--success);
+}
+
+.cash-flow-table .amount.negative {
+    color: var(--danger);
+}
+
+/* Responsive table */
+@media (max-width: 768px) {
+    .cash-flow-table {
+        font-size: 12px;
+    }
+    
+    .cash-flow-table th,
+    .cash-flow-table td {
+        padding: 8px 12px;
+    }
 }
 
 /* Utility Classes */
