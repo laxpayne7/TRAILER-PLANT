@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Working Capital Calculator</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <div class="header">
+            <h1>Working Capital Calculator</h1>
+            <p>Advanced financial modeling for manufacturing operations</p>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-button active" onclick="showTab('cashflow')">Cash Flow Simulator</button>
+            <button class="tab-button" onclick="showTab('pnl')">Profit & Loss Statement</button>
+            <button class="tab-button" onclick="showTab('balance')">Balance Sheet</button>
+        </div>
+
+        <!-- Tab Contents -->
+        <!-- Cash Flow Simulator Tab -->
+        <div id="cashflow-tab" class="tab-content active">
+            <!-- Content will be loaded from cashflow-form.html -->
+        </div>
+
+        <!-- Profit & Loss Statement Tab -->
+        <div id="pnl-tab" class="tab-content">
+            <div class="tab-header">
+                <h2>Profit & Loss Statement</h2>
+                <p>Comprehensive P&L analysis based on simulated cash flows</p>
+            </div>
+            <div class="placeholder">
+                <p>P&L Statement content will be added in Phase 5</p>
+            </div>
+        </div>
+
+        <!-- Balance Sheet Tab -->
+        <div id="balance-tab" class="tab-content">
+            <div class="tab-header">
+                <h2>Balance Sheet</h2>
+                <p>Financial position snapshot as of January 1st, 2026</p>
+            </div>
+            <div class="placeholder">
+                <p>Balance Sheet content will be added in Phase 6</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/script.js"></script>
+    <script>
+        // Load the cashflow form component
+        loadComponent('components/cashflow-form.html', 'cashflow-tab');
+    </script>
+</body>
+</html>

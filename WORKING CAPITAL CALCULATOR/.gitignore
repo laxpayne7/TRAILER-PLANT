@@ -1,0 +1,5 @@
+# Ignore common temporary files
+*.log
+*.tmp
+# if this project ever generates a build folder
+build/

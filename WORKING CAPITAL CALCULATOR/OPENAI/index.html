@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Working Capital Calculator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>Working Capital Calculator</header>
+
+<div class="tab-container">
+    <div class="tab active" onclick="openTab('cashFlow')">Cash Flow Simulator</div>
+    <div class="tab" onclick="openTab('pnl')">Profit & Loss Statement</div>
+    <div class="tab" onclick="openTab('balanceSheet')">Balance Sheet</div>
+</div>
+
+<div id="cashFlow" class="tab-content active">
+    <h2>Cash Flow Simulator</h2>
+    <p>This tool helps you simulate the cash flow for your trailer plant project. Fill in the details below to calculate the working capital requirements and cash flow projections.</p>
+    <div id="cashFlowForm"></div> <!-- Form will be injected here -->
+</div>
+
+<div id="pnl" class="tab-content">
+    <h2>Profit & Loss Statement</h2>
+    <p>This section will generate the P&L statement based on simulation.</p>
+</div>
+
+<div id="balanceSheet" class="tab-content">
+    <h2>Balance Sheet</h2>
+    <p>This section will display the financial position as of Jan 1, 2026.</p>
+</div>
+
+<script src="js/script.js"></script>
+</body>
+</html>

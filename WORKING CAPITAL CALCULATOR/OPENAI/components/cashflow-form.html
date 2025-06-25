@@ -1,0 +1,161 @@
+<!--
+  Cash Flow Input Form
+  This section contains grouped user input fields for the Cash Flow Simulator.
+  Each <fieldset> groups logically related input fields (project setup, production, costs, etc.)
+  CSS classes like grid-2 and grid-3 handle responsive column layouts.
+-->
+
+<form id="cashFlowForm">
+
+  <!-- Project Setup Inputs -->
+  <fieldset>
+    <legend>📅 Project Setup</legend>
+    <div class="grid-2">
+      <label>
+        Project Start Date:
+        <input type="date" id="startDate" value="2025-10-01">
+      </label>
+      <label>
+        Initial Balance (₹):
+        <input type="number" id="initialBalance" value="0">
+      </label>
+      <label>
+        Partner B Investment (Auto):
+        <input type="text" id="partnerBInvestment" readonly value="To be calculated">
+      </label>
+    </div>
+  </fieldset>
+
+  <!-- Production & Inventory Inputs -->
+  <fieldset>
+    <legend>🏭 Production & Inventory</legend>
+    <div class="grid-3">
+      <label>
+        Starting Inventory Units:
+        <input type="number" id="startingInventory" value="6">
+      </label>
+      <label>
+        Plant Capacity (Units/Cycle):
+        <input type="number" id="plantCapacity" value="6">
+      </label>
+      <label>
+        Lead Time per Cycle (days):
+        <input type="number" id="leadTime" value="6">
+      </label>
+      <label>
+        Cycle Frequency (days):
+        <input type="number" id="cycleFreq" value="7">
+      </label>
+    </div>
+  </fieldset>
+
+  <!-- Orders & Scheduling Inputs -->
+  <fieldset>
+    <legend>📦 Orders & Scheduling</legend>
+    <div class="grid-3">
+      <label>
+        Initial Order Day:
+        <input type="number" id="initialOrderDay" value="8">
+      </label>
+      <label>
+        Order Frequency (days):
+        <input type="number" id="orderFreq" value="7">
+      </label>
+      <label>
+        Material Purchase Day (relative):
+        <input type="number" id="materialDay" value="1">
+      </label>
+    </div>
+  </fieldset>
+
+  <!-- Operations Inputs -->
+  <fieldset>
+    <legend>🔧 Operations</legend>
+    <div class="grid-3">
+      <label>
+        Monthly Working Days:
+        <input type="number" id="workingDays" value="24">
+      </label>
+      <label>
+        Shift Operations:
+        <select id="shifts">
+          <option value="1">1 shift (12 hrs)</option>
+          <option value="2">2 shifts (double capacity)</option>
+        </select>
+      </label>
+      <label>
+        Monthly Target Units:
+        <input type="number" id="monthlyTarget" value="24">
+      </label>
+      <label>
+        Monthly Target After 3 Months:
+        <input type="number" id="targetGrowth" value="40">
+      </label>
+    </div>
+  </fieldset>
+
+  <!-- Cost Inputs -->
+  <fieldset>
+    <legend>💰 Costs</legend>
+    <div class="grid-3">
+      <label>
+        Steel Material Cost per Unit (₹ Lakhs):
+        <input type="number" id="steelCost" value="3.5">
+      </label>
+      <label>
+        Bought-out Material Cost per Unit (₹ Lakhs):
+        <input type="number" id="bomCost" value="9">
+      </label>
+      <label>
+        Labour Cost per Unit (₹ Lakhs):
+        <input type="number" id="labourCost" value="0.5">
+      </label>
+      <label>
+        Fixed Monthly Costs (₹):
+        <input type="number" id="fixedCost" value="1000000">
+      </label>
+    </div>
+  </fieldset>
+
+  <!-- Revenue Input -->
+  <fieldset>
+    <legend>📈 Revenue</legend>
+    <div class="grid-2">
+      <label>
+        Cash In Per Unit (₹ Lakhs):
+        <input type="number" id="cashIn" value="14">
+      </label>
+    </div>
+  </fieldset>
+
+  <!-- Optional Logic Toggles -->
+  <fieldset>
+    <legend>⚙️ Logic Options</legend>
+    <div class="grid-2">
+      <label>
+        <input type="checkbox" id="applyGST" onchange="toggleGSTInput(this)" checked>
+        Apply GST
+      </label>
+      <label id="gstRateLabel">
+        GST Rate (%):
+        <input type="number" id="gstRate" value="28">
+      </label>
+
+      <label>
+        <input type="checkbox" id="applyDelay" onchange="toggleDelayInput(this)">
+        Apply Delayed Payment
+      </label>
+      <label id="delayInputLabel" style="display:none;">
+        Payment Delay (working days):
+        <input type="number" id="paymentDelay" value="3">
+      </label>
+    </div>
+  </fieldset>
+
+  <!-- Simulate & Export Buttons -->
+  <div style="margin-top: 1rem;">
+    <button type="button" onclick="simulateCashFlow()">▶ Simulate</button>
+    <button type="button" onclick="exportToExcel()">📤 Export to Excel</button>
+  </div>
+
+</form>
