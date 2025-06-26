@@ -140,15 +140,17 @@ function calculateProductionCycles(inputs) {
     let currentDay = 1;
     const totalDays = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
     
-    while (currentDay <= totalDays && cycleNumber <= 12) {
+    while (currentDay <= totalDays && cycleNumber <= 13) {
         // Determine order quantity based on cycle number
         let orderQty;
         if (cycleNumber <= 4) {
             orderQty = inputs.orderQuantities.month1;
         } else if (cycleNumber <= 8) {
             orderQty = inputs.orderQuantities.month2;
-        } else {
+        } else if (cycleNumber <= 13) {
             orderQty = inputs.orderQuantities.month3;
+        } else {
+            orderQty = inputs.orderQuantities.month3; // Default to month3 for any extra cycles
         }
         
         // Calculate unit numbers
@@ -199,7 +201,7 @@ function calculateOrders(inputs, cycles) {
         orders.push({
             orderNumber: orderNumber,
             orderDay: orderDay,
-            deliveryDay: orderNumber === 1 ? orderDay : orderDay + 6,
+            deliveryDay: orderNumber === 1 ? orderDay : orderDay, // Orders align with cycle completion
             paymentType: orderNumber === 1 ? 'full' : 'split',
             quantity: quantity,
             cycleNumber: cycleIndex
@@ -277,34 +279,32 @@ function calculateCashFlows(inputs, partnerInvestment) {
                 balance: balance
             });
         }
-        
-        // Check for order arrivals
-        const newOrders = orders.filter(o => o.orderDay === dayCount);
-        newOrders.forEach(order => {
-            if (order.paymentType === 'full') {
-                // Cycle 1: Full payment on delivery
-                const revenue = inputs.cashInPerUnit * order.quantity;
-                const gstAmount = inputs.applyGST ? revenue * (inputs.gstRate / 100) : 0;
-                const netRevenue = revenue - gstAmount;
-                
-                const paymentDate = inputs.applyDelay ? 
-                    addWorkingDays(currentDate, inputs.delayDays, inputs.startDate) : currentDate;
-                const paymentDay = Math.floor((paymentDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-                
-                if (paymentDay === dayCount) {
-                    balance += netRevenue;
-                    transactions.push({
-                        date: new Date(currentDate),
-                        day: dayCount,
-                        details: `Order Reception & Full Payment - C01U001-C01U${String(order.quantity).padStart(3, '0')}`,
-                        head: 'Sales - Full Payment',
-                        outflow: 0,
-                        inflow: netRevenue,
-                        balance: balance
-                    });
-                }
-            } else {
-                // 50% advance payment
+
+        // Check for order arrivals and payments based on cycles
+        if (dayCount === inputs.initialOrderDay) {
+            // Day 8: First order with full payment (special case)
+            const order = orders[0];
+            const revenue = inputs.cashInPerUnit * order.quantity;
+            const gstAmount = inputs.applyGST ? revenue * (inputs.gstRate / 100) : 0;
+            const netRevenue = revenue - gstAmount;
+            
+            balance += netRevenue;
+            transactions.push({
+                date: new Date(currentDate),
+                day: dayCount,
+                details: `Order 1 - Full Payment - C01U001-C01U${String(order.quantity).padStart(3, '0')}`,
+                head: 'Sales - Full Payment',
+                outflow: 0,
+                inflow: netRevenue,
+                balance: balance
+            });
+        }
+
+        // For subsequent cycles: 50% advance on cycle start (Day 1 of cycle)
+        const startingCycle = productionCycles.find(c => c.startDay === dayCount && c.cycleNumber > 1);
+        if (startingCycle) {
+            const order = orders.find(o => o.cycleNumber === startingCycle.cycleNumber);
+            if (order) {
                 const advancePayment = inputs.cashInPerUnit * order.quantity * 0.5;
                 const gstAmount = inputs.applyGST ? advancePayment * (inputs.gstRate / 100) : 0;
                 const netAdvance = advancePayment - gstAmount;
@@ -314,41 +314,37 @@ function calculateCashFlows(inputs, partnerInvestment) {
                 transactions.push({
                     date: new Date(currentDate),
                     day: dayCount,
-                    details: `Order ${order.orderNumber} - Advance Payment (50%) for ${cycle.unitsProduced}`,
+                    details: `Order ${order.orderNumber} - Advance Payment (50%) for ${startingCycle.unitsProduced}`,
                     head: 'Sales - Advance',
                     outflow: 0,
                     inflow: netAdvance,
                     balance: balance
                 });
             }
-        });
-        
-        // Check for deliveries (final payments)
-        const deliveries = orders.filter(o => o.deliveryDay === dayCount && o.paymentType === 'split');
-        deliveries.forEach(order => {
-            const finalPayment = inputs.cashInPerUnit * order.quantity * 0.5;
-            const gstAmount = inputs.applyGST ? finalPayment * (inputs.gstRate / 100) : 0;
-            const netFinal = finalPayment - gstAmount;
-            
-            const paymentDate = inputs.applyDelay ? 
-                addWorkingDays(currentDate, inputs.delayDays, inputs.startDate) : currentDate;
-            const paymentDay = Math.floor((paymentDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-            
-            if (paymentDay === dayCount) {
+        }
+
+        // 50% final payment on cycle end (Day 7 of cycle)
+        const endingCycle = productionCycles.find(c => c.endDay === dayCount && c.cycleNumber > 1);
+        if (endingCycle) {
+            const order = orders.find(o => o.cycleNumber === endingCycle.cycleNumber);
+            if (order) {
+                const finalPayment = inputs.cashInPerUnit * order.quantity * 0.5;
+                const gstAmount = inputs.applyGST ? finalPayment * (inputs.gstRate / 100) : 0;
+                const netFinal = finalPayment - gstAmount;
+                
                 balance += netFinal;
-                const cycle = productionCycles[order.cycleNumber - 1];
                 transactions.push({
                     date: new Date(currentDate),
                     day: dayCount,
-                    details: `Order ${order.orderNumber} - Final Payment (50%) on Delivery - ${cycle.unitsProduced}`,
+                    details: `Order ${order.orderNumber} - Final Payment (50%) on Delivery - ${endingCycle.unitsProduced}`,
                     head: 'Sales - Final Payment',
                     outflow: 0,
                     inflow: netFinal,
                     balance: balance
                 });
             }
-        });
-        
+        }        
+       
         // Check for month start (labour and fixed costs for previous month)
         if (dayOfMonth === 1 && dayCount > 1) {
             const prevMonth = month === 0 ? 11 : month - 1;
@@ -393,25 +389,43 @@ function calculateCashFlows(inputs, partnerInvestment) {
             }
             monthlyProduction[monthKey] += completedCycle.quantity;
         }
-    }
     
-    // Final settlement on Dec 31 - Add pending labour and fixed costs as payables
-    const lastDate = new Date(endDate);
-    const lastMonth = lastDate.getMonth();
-    const lastYear = lastDate.getFullYear();
-    const lastMonthKey = `${lastYear}-${lastMonth}`;
-    const unitsInDecember = monthlyProduction[lastMonthKey] || 0;
-    
-    if (unitsInDecember > 0 || inputs.fixedCosts > 0) {
+    // Final settlement on Dec 31 - Actually pay December labour and fixed costs
+    if (dayCount === totalDays) {
+        const lastDate = new Date(endDate);
+        const lastMonth = lastDate.getMonth();
+        const lastYear = lastDate.getFullYear();
+        const lastMonthKey = `${lastYear}-${lastMonth}`;
+        const unitsInDecember = monthlyProduction[lastMonthKey] || 0;
+        
+        // December labour cost
+        if (unitsInDecember > 0) {
+            const labourCost = inputs.labourCost * unitsInDecember;
+            balance -= labourCost;
+            
+            transactions.push({
+                date: new Date(endDate),
+                day: totalDays,
+                details: `Labour Cost Payment for ${unitsInDecember} units produced in December ${lastYear} (Year-end settlement)`,
+                head: 'Labour',
+                outflow: labourCost,
+                inflow: 0,
+                balance: balance
+            });
+        }
+        
+        // December fixed costs
+        balance -= inputs.fixedCosts;
         transactions.push({
             date: new Date(endDate),
             day: totalDays,
-            details: `Payables: December Labour (${unitsInDecember} units) and Fixed Costs - Due Jan 1, 2026`,
-            head: 'Year-end Payables',
-            outflow: 0,
+            details: `Fixed Monthly Costs - December ${lastYear} (Year-end settlement)`,
+            head: 'Fixed Costs',
+            outflow: inputs.fixedCosts,
             inflow: 0,
             balance: balance
         });
+    }
     }
     
     return transactions;
@@ -490,7 +504,11 @@ function generateCashFlowTable() {
         </table>
     `;
     
-    tableContainer.innerHTML = tableHTML;
+    tableContainer.innerHTML = `
+        <div class="table-wrapper">
+            ${tableHTML}
+        </div>
+    `;
 }
 
 // Collect all input values from the form
@@ -693,23 +711,38 @@ function generateCashFlowGraph() {
                         padding: 20
                     }
                 },
-                tooltip: {
-                    backgroundColor: 'rgba(31, 40, 51, 0.9)',
-                    titleColor: '#66FCF1',
-                    bodyColor: '#C5C6C7',
-                    borderColor: '#45A29E',
-                    borderWidth: 1,
-                    callbacks: {
-                        label: function(context) {
-                            let label = context.dataset.label || '';
-                            if (label) {
-                                label += ': ';
-                            }
-                            label += '₹' + Math.abs(context.parsed.y).toFixed(2) + ' L';
-                            return label;
+            tooltip: {
+                backgroundColor: 'rgba(31, 40, 51, 0.9)',
+                titleColor: '#66FCF1',
+                bodyColor: '#C5C6C7',
+                borderColor: '#45A29E',
+                borderWidth: 1,
+                callbacks: {
+                    title: function(tooltipItems) {
+                        // Show date as title
+                        return tooltipItems[0].label;
+                    },
+                    beforeLabel: function(context) {
+                        // Show transaction heads for this date
+                        const dateKey = context.label;
+                        const transactions = cashFlowData.filter(t => formatDate(t.date) === dateKey);
+                        const heads = [...new Set(transactions.map(t => t.head))];
+                        
+                        if (heads.length > 0) {
+                            return 'Transactions: ' + heads.join(', ');
                         }
+                        return '';
+                    },
+                    label: function(context) {
+                        let label = context.dataset.label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        label += '₹' + Math.abs(context.parsed.y).toFixed(2) + ' L';
+                        return label;
                     }
                 }
+            }
             },
             scales: {
                 x: {

@@ -465,6 +465,30 @@ body {
     overflow-x: auto;
 }
 
+/* Table container with padding */
+.table-container {
+    background-color: var(--primary-dark);
+    border: 1px solid var(--accent-secondary);
+    border-radius: 12px;
+    padding: 24px;
+    min-height: 300px;
+}
+
+/* Table wrapper for scrolling */
+.table-wrapper {
+    max-height: 600px;
+    overflow-y: auto;
+    overflow-x: auto;
+    position: relative;
+}
+
+/* Cash Flow Table Styles */
+.cash-flow-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
 /* Graph Container Specific */
 .graph-container {
     position: relative;
@@ -480,13 +504,15 @@ body {
     width: 100%;
     border-collapse: collapse;
     font-size: 14px;
+    margin: 24px;  /* Add margin instead of container padding */
 }
 
 .cash-flow-table thead {
     background-color: var(--secondary-dark);
     position: sticky;
-    top: 0;
+    top: 0;  /* Stick to the very top of container */
     z-index: 10;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .cash-flow-table th {
@@ -495,6 +521,8 @@ body {
     font-weight: 600;
     color: var(--accent-primary);
     border-bottom: 2px solid var(--accent-secondary);
+    background-color: var(--secondary-dark);
+    position: relative;
 }
 
 .cash-flow-table td {
@@ -520,6 +548,26 @@ body {
     color: var(--danger);
 }
 
+/* Custom scrollbar for table container */
+.table-container::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: var(--primary-dark);
+    border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: var(--accent-secondary);
+    border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-primary);
+}
+
 /* Responsive table */
 @media (max-width: 768px) {
     .cash-flow-table {
@@ -529,6 +577,10 @@ body {
     .cash-flow-table th,
     .cash-flow-table td {
         padding: 8px 12px;
+    }
+    
+    .table-container {
+        max-height: 400px;
     }
 }
 
