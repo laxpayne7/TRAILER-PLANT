@@ -76,6 +76,7 @@ let summaryData = {
     finalBalance: 0,
     partnerInvestment: 0
 };
+let cashFlowChart = null; // Store chart instance
 
 // Cash Flow Simulation function
 function simulateCashFlow() {
@@ -121,6 +122,7 @@ function simulateCashFlow() {
     // Update UI
     updateSummaryCards();
     generateCashFlowTable();
+    generateCashFlowGraph();
     
     // Show results sections
     document.querySelector('.summary-section').style.display = 'block';
@@ -498,4 +500,164 @@ function addWorkingDays(date, days) {
     }
     
     return result;
+}
+
+// Generate Cash Flow Graph
+function generateCashFlowGraph() {
+    // Aggregate data by date
+    const dailyData = {};
+    
+    cashFlowData.forEach(entry => {
+        const dateKey = formatDate(entry.date);
+        
+        if (!dailyData[dateKey]) {
+            dailyData[dateKey] = {
+                date: entry.date,
+                inflow: 0,
+                outflow: 0,
+                balance: entry.balance
+            };
+        }
+        
+        dailyData[dateKey].inflow += entry.inflow;
+        dailyData[dateKey].outflow += entry.outflow;
+        dailyData[dateKey].balance = entry.balance; // Take the last balance of the day
+    });
+    
+    // Convert to arrays for Chart.js
+    const labels = [];
+    const inflowData = [];
+    const outflowData = [];
+    const balanceData = [];
+    
+    Object.keys(dailyData).forEach(dateKey => {
+        const data = dailyData[dateKey];
+        labels.push(dateKey);
+        inflowData.push(data.inflow / 100000); // Convert to lakhs
+        outflowData.push(-data.outflow / 100000); // Negative for below axis
+        balanceData.push(data.balance / 100000); // Convert to lakhs
+    });
+    
+    // Destroy existing chart if it exists
+    if (cashFlowChart) {
+        cashFlowChart.destroy();
+    }
+    
+    // Chart configuration
+    const ctx = document.getElementById('cashFlowChart').getContext('2d');
+    cashFlowChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Cash Inflow',
+                    data: inflowData,
+                    backgroundColor: 'rgba(102, 252, 241, 0.6)',
+                    borderColor: '#66FCF1',
+                    borderWidth: 1,
+                    order: 2
+                },
+                {
+                    label: 'Cash Outflow',
+                    data: outflowData,
+                    backgroundColor: 'rgba(252, 102, 102, 0.6)',
+                    borderColor: '#FC6666',
+                    borderWidth: 1,
+                    order: 2
+                },
+                {
+                    label: 'Balance',
+                    data: balanceData,
+                    type: 'line',
+                    borderColor: '#66FCF1',
+                    backgroundColor: 'rgba(102, 252, 241, 0.1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#66FCF1',
+                    pointBorderColor: '#45A29E',
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    tension: 0.1,
+                    order: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Daily Cash Flow Analysis',
+                    color: '#C5C6C7',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    }
+                },
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        color: '#C5C6C7',
+                        usePointStyle: true,
+                        padding: 20
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(31, 40, 51, 0.9)',
+                    titleColor: '#66FCF1',
+                    bodyColor: '#C5C6C7',
+                    borderColor: '#45A29E',
+                    borderWidth: 1,
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            label += '₹' + Math.abs(context.parsed.y).toFixed(2) + ' L';
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    display: true,
+                    grid: {
+                        color: 'rgba(69, 162, 158, 0.1)',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        color: '#8B8C8D',
+                        maxRotation: 45,
+                        minRotation: 45
+                    }
+                },
+                y: {
+                    display: true,
+                    grid: {
+                        color: 'rgba(69, 162, 158, 0.1)',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        color: '#8B8C8D',
+                        callback: function(value) {
+                            return '₹' + value + ' L';
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Amount (in Lakhs)',
+                        color: '#8B8C8D'
+                    }
+                }
+            }
+        }
+    });
 }

@@ -465,6 +465,16 @@ body {
     overflow-x: auto;
 }
 
+/* Graph Container Specific */
+.graph-container {
+    position: relative;
+    height: 400px;
+}
+
+#cashFlowChart {
+    max-height: 100%;
+}
+
 /* Cash Flow Table Styles */
 .cash-flow-table {
     width: 100%;
