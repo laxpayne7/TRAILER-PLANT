@@ -130,6 +130,88 @@ function simulateCashFlow() {
     document.querySelector('.graph-section').style.display = 'block';
 }
 
+// Calculate production cycles
+function calculateProductionCycles(inputs) {
+    const cycles = [];
+    const startDate = new Date(inputs.startDate);
+    const endDate = new Date('2025-12-31');
+    
+    let cycleNumber = 1;
+    let currentDay = 1;
+    const totalDays = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+    
+    while (currentDay <= totalDays && cycleNumber <= 12) {
+        // Determine order quantity based on cycle number
+        let orderQty;
+        if (cycleNumber <= 4) {
+            orderQty = inputs.orderQuantities.month1;
+        } else if (cycleNumber <= 8) {
+            orderQty = inputs.orderQuantities.month2;
+        } else {
+            orderQty = inputs.orderQuantities.month3;
+        }
+        
+        // Calculate unit numbers
+        let totalUnitsBefore = 0;
+        if (cycleNumber <= 4) {
+            totalUnitsBefore = (cycleNumber - 1) * inputs.orderQuantities.month1;
+        } else if (cycleNumber <= 8) {
+            totalUnitsBefore = 4 * inputs.orderQuantities.month1 + 
+                              (cycleNumber - 5) * inputs.orderQuantities.month2;
+        } else {
+            totalUnitsBefore = 4 * inputs.orderQuantities.month1 + 
+                              4 * inputs.orderQuantities.month2 + 
+                              (cycleNumber - 9) * inputs.orderQuantities.month3;
+        }
+        
+        const startUnit = totalUnitsBefore + 1;
+        const endUnit = totalUnitsBefore + orderQty;
+        
+        cycles.push({
+            cycleNumber: cycleNumber,
+            startDay: currentDay,
+            endDay: currentDay + inputs.leadTime - 1,
+            materialPurchaseDay: cycleNumber === 1 ? 1 : cycles[cycleNumber - 2].endDay,
+            quantity: orderQty,
+            unitsProduced: `C${String(cycleNumber).padStart(2, '0')}U${String(startUnit).padStart(3, '0')}-C${String(cycleNumber).padStart(2, '0')}U${String(endUnit).padStart(3, '0')}`
+        });
+        
+        currentDay += inputs.cycleFrequency;
+        cycleNumber++;
+    }
+    
+    return cycles;
+}
+
+// Calculate all orders
+function calculateOrders(inputs, cycles) {
+    const orders = [];
+    let orderNumber = 1;
+    let orderDay = inputs.initialOrderDay;
+    const totalDays = Math.floor((new Date('2025-12-31') - new Date(inputs.startDate)) / (1000 * 60 * 60 * 24)) + 1;
+    
+    while (orderDay <= totalDays) {
+        // Find which cycle this order corresponds to
+        const cycleIndex = Math.min(Math.floor((orderDay - inputs.initialOrderDay) / inputs.orderFrequency) + 1, cycles.length);
+        const cycle = cycles[cycleIndex - 1];
+        const quantity = cycle ? cycle.quantity : inputs.orderQuantities.month1;
+        
+        orders.push({
+            orderNumber: orderNumber,
+            orderDay: orderDay,
+            deliveryDay: orderNumber === 1 ? orderDay : orderDay + 6,
+            paymentType: orderNumber === 1 ? 'full' : 'split',
+            quantity: quantity,
+            cycleNumber: cycleIndex
+        });
+        
+        orderDay += inputs.orderFrequency;
+        orderNumber++;
+    }
+    
+    return orders;
+}
+
 // Calculate cash flows
 function calculateCashFlows(inputs, partnerInvestment) {
     const transactions = [];
@@ -137,165 +219,144 @@ function calculateCashFlows(inputs, partnerInvestment) {
     
     const startDate = new Date(inputs.startDate);
     const endDate = new Date('2025-12-31');
+    const totalDays = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
     
-    // Day 1: Partner B Investment
-    if (partnerInvestment > 0) {
-        transactions.push({
-            date: new Date(startDate),
-            day: 1,
-            details: 'Partner B Working Capital Investment',
-            head: 'Partner B Investment',
-            outflow: 0,
-            inflow: partnerInvestment,
-            balance: balance + partnerInvestment
-        });
-        balance += partnerInvestment;
-    }
+    // Pre-calculate all production cycles
+    const productionCycles = calculateProductionCycles(inputs);
     
-    // Track cycles and production
-    let currentCycle = 1;
-    let totalUnitsProduced = 0;
-    let monthlyUnitsProduced = {};
+    // Pre-calculate all orders
+    const orders = calculateOrders(inputs, productionCycles);
+    
+    // Track monthly production for labour cost
+    const monthlyProduction = {};
     
     // Process each day
-    let currentDate = new Date(startDate);
-    let dayCount = 1;
-    
-    while (currentDate <= endDate) {
+    for (let dayCount = 1; dayCount <= totalDays; dayCount++) {
+        const currentDate = new Date(startDate);
+        currentDate.setDate(currentDate.getDate() + dayCount - 1);
+        
+        const dayOfMonth = currentDate.getDate();
         const month = currentDate.getMonth();
         const year = currentDate.getFullYear();
         const monthKey = `${year}-${month}`;
-        const dayOfMonth = currentDate.getDate();
-        const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
         
-        // Skip if it's the 31st day (holiday)
-        if (dayOfMonth === 31) {
-            currentDate.setDate(currentDate.getDate() + 1);
-            dayCount++;
+        // Skip 31st day (holiday) except for final day
+        if (dayOfMonth === 31 && dayCount < totalDays) {
             continue;
         }
         
-        // Initialize month tracking
-        if (!monthlyUnitsProduced[monthKey]) {
-            monthlyUnitsProduced[monthKey] = 0;
-        }
-        
-        // Material Purchase Logic
-        if (currentCycle === 1 && dayCount === 1) {
-            // Cycle 1: Purchase on Day 1
-            const materialCost = (inputs.steelCost + inputs.boughtOutCost) * inputs.plantCapacity;
-            const gstAmount = inputs.applyGST ? materialCost * (inputs.gstRate / 100) : 0;
-            const totalCost = materialCost + gstAmount;
-            
-            balance -= totalCost;
+        // Day 1: Partner B Investment
+        if (dayCount === 1 && partnerInvestment > 0) {
+            balance += partnerInvestment;
             transactions.push({
                 date: new Date(currentDate),
                 day: dayCount,
-                details: `Material Purchase for C${String(currentCycle).padStart(2, '0')}U001-C${String(currentCycle).padStart(2, '0')}U${String(inputs.plantCapacity).padStart(3, '0')}`,
-                head: 'Materials',
-                outflow: totalCost,
-                inflow: 0,
-                balance: balance
-            });
-        } else if (dayCount % inputs.cycleFrequency === 6 || (dayCount % inputs.cycleFrequency === 0 && inputs.cycleFrequency === 6)) {
-            // Subsequent cycles: Purchase on Day 6 of previous cycle
-            const nextCycle = Math.floor(dayCount / inputs.cycleFrequency) + 2;
-            const materialCost = (inputs.steelCost + inputs.boughtOutCost) * inputs.plantCapacity;
-            const gstAmount = inputs.applyGST ? materialCost * (inputs.gstRate / 100) : 0;
-            const totalCost = materialCost + gstAmount;
-            
-            balance -= totalCost;
-            const startUnit = ((nextCycle - 1) * inputs.plantCapacity) + 1;
-            const endUnit = nextCycle * inputs.plantCapacity;
-            
-            transactions.push({
-                date: new Date(currentDate),
-                day: dayCount,
-                details: `Material Purchase for C${String(nextCycle).padStart(2, '0')}U${String(startUnit).padStart(3, '0')}-C${String(nextCycle).padStart(2, '0')}U${String(endUnit).padStart(3, '0')}`,
-                head: 'Materials',
-                outflow: totalCost,
-                inflow: 0,
-                balance: balance
-            });
-        }
-        
-        // Order Reception and Payment Logic
-        if (dayCount === inputs.initialOrderDay) {
-            // Day 8: Initial 6 orders with full payment
-            const revenue = inputs.cashInPerUnit * inputs.plantCapacity;
-            const gstAmount = inputs.applyGST ? revenue * (inputs.gstRate / 100) : 0;
-            const totalRevenue = revenue - gstAmount; // Net revenue after GST
-            
-            const paymentDay = inputs.applyDelay ? 
-                addWorkingDays(currentDate, inputs.delayDays) : currentDate;
-            
-            balance += totalRevenue;
-            transactions.push({
-                date: new Date(currentDate),
-                day: dayCount,
-                details: `Order Reception & Full Payment - C01U001-C01U006`,
-                head: 'Sales - Full Payment',
+                details: 'Partner B Working Capital Investment',
+                head: 'Partner B Investment',
                 outflow: 0,
-                inflow: totalRevenue,
+                inflow: partnerInvestment,
                 balance: balance
             });
+        }
+        
+        // Check for material purchases
+        const purchaseCycle = productionCycles.find(c => c.materialPurchaseDay === dayCount);
+        if (purchaseCycle) {
+            const materialCost = (inputs.steelCost + inputs.boughtOutCost) * purchaseCycle.quantity;
+            const gstAmount = inputs.applyGST ? materialCost * (inputs.gstRate / 100) : 0;
+            const totalCost = materialCost + gstAmount;
             
-            totalUnitsProduced += inputs.plantCapacity;
-            monthlyUnitsProduced[monthKey] += inputs.plantCapacity;
-            
-        } else if (dayCount > inputs.initialOrderDay && (dayCount - inputs.initialOrderDay) % inputs.orderFrequency === 0) {
-            // Subsequent orders every 7 days
-            const cycleNum = Math.floor((dayCount - 1) / inputs.cycleFrequency) + 1;
-            const startUnit = ((cycleNum - 1) * inputs.plantCapacity) + 1;
-            const endUnit = cycleNum * inputs.plantCapacity;
-            
-            // 50% advance payment on Day 1 of cycle
-            if ((dayCount - 1) % inputs.cycleFrequency === 0) {
-                const advancePayment = (inputs.cashInPerUnit * inputs.plantCapacity * 0.5);
+            balance -= totalCost;
+            transactions.push({
+                date: new Date(currentDate),
+                day: dayCount,
+                details: `Material Purchase for ${purchaseCycle.unitsProduced}`,
+                head: 'Materials',
+                outflow: totalCost,
+                inflow: 0,
+                balance: balance
+            });
+        }
+        
+        // Check for order arrivals
+        const newOrders = orders.filter(o => o.orderDay === dayCount);
+        newOrders.forEach(order => {
+            if (order.paymentType === 'full') {
+                // Cycle 1: Full payment on delivery
+                const revenue = inputs.cashInPerUnit * order.quantity;
+                const gstAmount = inputs.applyGST ? revenue * (inputs.gstRate / 100) : 0;
+                const netRevenue = revenue - gstAmount;
+                
+                const paymentDate = inputs.applyDelay ? 
+                    addWorkingDays(currentDate, inputs.delayDays, inputs.startDate) : currentDate;
+                const paymentDay = Math.floor((paymentDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                
+                if (paymentDay === dayCount) {
+                    balance += netRevenue;
+                    transactions.push({
+                        date: new Date(currentDate),
+                        day: dayCount,
+                        details: `Order Reception & Full Payment - C01U001-C01U${String(order.quantity).padStart(3, '0')}`,
+                        head: 'Sales - Full Payment',
+                        outflow: 0,
+                        inflow: netRevenue,
+                        balance: balance
+                    });
+                }
+            } else {
+                // 50% advance payment
+                const advancePayment = inputs.cashInPerUnit * order.quantity * 0.5;
                 const gstAmount = inputs.applyGST ? advancePayment * (inputs.gstRate / 100) : 0;
                 const netAdvance = advancePayment - gstAmount;
                 
                 balance += netAdvance;
+                const cycle = productionCycles[order.cycleNumber - 1];
                 transactions.push({
                     date: new Date(currentDate),
                     day: dayCount,
-                    details: `Advance Payment (50%) for C${String(cycleNum).padStart(2, '0')}U${String(startUnit).padStart(3, '0')}-C${String(cycleNum).padStart(2, '0')}U${String(endUnit).padStart(3, '0')}`,
+                    details: `Order ${order.orderNumber} - Advance Payment (50%) for ${cycle.unitsProduced}`,
                     head: 'Sales - Advance',
                     outflow: 0,
                     inflow: netAdvance,
                     balance: balance
                 });
             }
+        });
+        
+        // Check for deliveries (final payments)
+        const deliveries = orders.filter(o => o.deliveryDay === dayCount && o.paymentType === 'split');
+        deliveries.forEach(order => {
+            const finalPayment = inputs.cashInPerUnit * order.quantity * 0.5;
+            const gstAmount = inputs.applyGST ? finalPayment * (inputs.gstRate / 100) : 0;
+            const netFinal = finalPayment - gstAmount;
             
-            // 50% final payment on Day 7 of cycle (delivery)
-            if ((dayCount - 1) % inputs.cycleFrequency === 6) {
-                const finalPayment = (inputs.cashInPerUnit * inputs.plantCapacity * 0.5);
-                const gstAmount = inputs.applyGST ? finalPayment * (inputs.gstRate / 100) : 0;
-                const netFinal = finalPayment - gstAmount;
-                
+            const paymentDate = inputs.applyDelay ? 
+                addWorkingDays(currentDate, inputs.delayDays, inputs.startDate) : currentDate;
+            const paymentDay = Math.floor((paymentDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+            
+            if (paymentDay === dayCount) {
                 balance += netFinal;
+                const cycle = productionCycles[order.cycleNumber - 1];
                 transactions.push({
                     date: new Date(currentDate),
                     day: dayCount,
-                    details: `Final Payment (50%) on Delivery - C${String(cycleNum).padStart(2, '0')}U${String(startUnit).padStart(3, '0')}-C${String(cycleNum).padStart(2, '0')}U${String(endUnit).padStart(3, '0')}`,
+                    details: `Order ${order.orderNumber} - Final Payment (50%) on Delivery - ${cycle.unitsProduced}`,
                     head: 'Sales - Final Payment',
                     outflow: 0,
                     inflow: netFinal,
                     balance: balance
                 });
-                
-                totalUnitsProduced += inputs.plantCapacity;
-                monthlyUnitsProduced[monthKey] += inputs.plantCapacity;
             }
-        }
+        });
         
-        // Labour Cost Payment - 1st of each month for previous month's production
+        // Check for month start (labour and fixed costs for previous month)
         if (dayOfMonth === 1 && dayCount > 1) {
             const prevMonth = month === 0 ? 11 : month - 1;
             const prevYear = month === 0 ? year - 1 : year;
             const prevMonthKey = `${prevYear}-${prevMonth}`;
-            const unitsLastMonth = monthlyUnitsProduced[prevMonthKey] || 0;
             
+            // Labour cost for previous month's production
+            const unitsLastMonth = monthlyProduction[prevMonthKey] || 0;
             if (unitsLastMonth > 0) {
                 const labourCost = inputs.labourCost * unitsLastMonth;
                 balance -= labourCost;
@@ -303,22 +364,20 @@ function calculateCashFlows(inputs, partnerInvestment) {
                 transactions.push({
                     date: new Date(currentDate),
                     day: dayCount,
-                    details: `Labour Cost Payment for ${unitsLastMonth} units manufactured in ${getMonthName(prevMonth)} ${prevYear}`,
+                    details: `Labour Cost Payment for ${unitsLastMonth} units produced in ${getMonthName(prevMonth)} ${prevYear}`,
                     head: 'Labour',
                     outflow: labourCost,
                     inflow: 0,
                     balance: balance
                 });
             }
-        }
-        
-        // Fixed Monthly Costs - End of each month
-        if (dayOfMonth === lastDayOfMonth || (lastDayOfMonth === 31 && dayOfMonth === 30)) {
+            
+            // Fixed costs for previous month
             balance -= inputs.fixedCosts;
             transactions.push({
                 date: new Date(currentDate),
                 day: dayCount,
-                details: `Fixed Monthly Costs - ${getMonthName(month)} ${year}`,
+                details: `Fixed Monthly Costs - ${getMonthName(prevMonth)} ${prevYear}`,
                 head: 'Fixed Costs',
                 outflow: inputs.fixedCosts,
                 inflow: 0,
@@ -326,14 +385,33 @@ function calculateCashFlows(inputs, partnerInvestment) {
             });
         }
         
-        // Update cycle number
-        if (dayCount > 0 && dayCount % inputs.cycleFrequency === 0) {
-            currentCycle++;
+        // Track production completion
+        const completedCycle = productionCycles.find(c => c.endDay === dayCount);
+        if (completedCycle) {
+            if (!monthlyProduction[monthKey]) {
+                monthlyProduction[monthKey] = 0;
+            }
+            monthlyProduction[monthKey] += completedCycle.quantity;
         }
-        
-        // Move to next day
-        currentDate.setDate(currentDate.getDate() + 1);
-        dayCount++;
+    }
+    
+    // Final settlement on Dec 31 - Add pending labour and fixed costs as payables
+    const lastDate = new Date(endDate);
+    const lastMonth = lastDate.getMonth();
+    const lastYear = lastDate.getFullYear();
+    const lastMonthKey = `${lastYear}-${lastMonth}`;
+    const unitsInDecember = monthlyProduction[lastMonthKey] || 0;
+    
+    if (unitsInDecember > 0 || inputs.fixedCosts > 0) {
+        transactions.push({
+            date: new Date(endDate),
+            day: totalDays,
+            details: `Payables: December Labour (${unitsInDecember} units) and Fixed Costs - Due Jan 1, 2026`,
+            head: 'Year-end Payables',
+            outflow: 0,
+            inflow: 0,
+            balance: balance
+        });
     }
     
     return transactions;
@@ -430,6 +508,13 @@ function collectInputValues() {
         leadTime: parseInt(document.getElementById('lead-time').value) || 0,
         cycleFrequency: parseInt(document.getElementById('cycle-frequency').value) || 0,
         
+        // Order Quantities
+        orderQuantities: {
+            month1: parseInt(document.getElementById('order-qty-month1').value) || 6,
+            month2: parseInt(document.getElementById('order-qty-month2').value) || 6,
+            month3: parseInt(document.getElementById('order-qty-month3').value) || 6
+        },
+        
         // Operations
         workingDays: parseInt(document.getElementById('working-days').value) || 0,
         shiftOperations: parseInt(document.getElementById('shift-operations').value) || 0,
@@ -487,7 +572,7 @@ function getMonthName(monthIndex) {
     return months[monthIndex];
 }
 
-function addWorkingDays(date, days) {
+function addWorkingDays(date, days, startDate) {
     const result = new Date(date);
     let addedDays = 0;
     
