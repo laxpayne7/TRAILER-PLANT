@@ -286,16 +286,16 @@ function calculateCashFlows(inputs, partnerInvestment) {
             const order = orders[0];
             const revenue = inputs.cashInPerUnit * order.quantity;
             const gstAmount = inputs.applyGST ? revenue * (inputs.gstRate / 100) : 0;
-            const netRevenue = revenue - gstAmount;
+            const totalRevenue = revenue + gstAmount;
             
-            balance += netRevenue;
+            balance += totalRevenue;
             transactions.push({
                 date: new Date(currentDate),
                 day: dayCount,
                 details: `Order 1 - Full Payment - C01U001-C01U${String(order.quantity).padStart(3, '0')}`,
                 head: 'Sales - Full Payment',
                 outflow: 0,
-                inflow: netRevenue,
+                inflow: totalRevenue,
                 balance: balance
             });
         }
@@ -307,17 +307,16 @@ function calculateCashFlows(inputs, partnerInvestment) {
             if (order) {
                 const advancePayment = inputs.cashInPerUnit * order.quantity * 0.5;
                 const gstAmount = inputs.applyGST ? advancePayment * (inputs.gstRate / 100) : 0;
-                const netAdvance = advancePayment - gstAmount;
+                const totalAdvance  = advancePayment + gstAmount;
                 
-                balance += netAdvance;
-                const cycle = productionCycles[order.cycleNumber - 1];
+                balance += totalAdvance;
                 transactions.push({
                     date: new Date(currentDate),
                     day: dayCount,
                     details: `Order ${order.orderNumber} - Advance Payment (50%) for ${startingCycle.unitsProduced}`,
                     head: 'Sales - Advance',
                     outflow: 0,
-                    inflow: netAdvance,
+                    inflow: totalAdvance,
                     balance: balance
                 });
             }
@@ -330,16 +329,16 @@ function calculateCashFlows(inputs, partnerInvestment) {
             if (order) {
                 const finalPayment = inputs.cashInPerUnit * order.quantity * 0.5;
                 const gstAmount = inputs.applyGST ? finalPayment * (inputs.gstRate / 100) : 0;
-                const netFinal = finalPayment - gstAmount;
+                const totalFinal  = finalPayment + gstAmount;
                 
-                balance += netFinal;
+                balance += totalFinal ;
                 transactions.push({
                     date: new Date(currentDate),
                     day: dayCount,
                     details: `Order ${order.orderNumber} - Final Payment (50%) on Delivery - ${endingCycle.unitsProduced}`,
                     head: 'Sales - Final Payment',
                     outflow: 0,
-                    inflow: netFinal,
+                    inflow: totalFinal,
                     balance: balance
                 });
             }
@@ -689,7 +688,7 @@ function generateCashFlowGraph() {
             responsive: true,
             maintainAspectRatio: false,
             interaction: {
-                mode: 'index',
+                mode: 'point',
                 intersect: false
             },
             plugins: {
@@ -711,38 +710,57 @@ function generateCashFlowGraph() {
                         padding: 20
                     }
                 },
-            tooltip: {
-                backgroundColor: 'rgba(31, 40, 51, 0.9)',
-                titleColor: '#66FCF1',
-                bodyColor: '#C5C6C7',
-                borderColor: '#45A29E',
-                borderWidth: 1,
-                callbacks: {
-                    title: function(tooltipItems) {
-                        // Show date as title
-                        return tooltipItems[0].label;
-                    },
-                    beforeLabel: function(context) {
-                        // Show transaction heads for this date
-                        const dateKey = context.label;
-                        const transactions = cashFlowData.filter(t => formatDate(t.date) === dateKey);
-                        const heads = [...new Set(transactions.map(t => t.head))];
-                        
-                        if (heads.length > 0) {
-                            return 'Transactions: ' + heads.join(', ');
+                tooltip: {
+                    backgroundColor: 'rgba(31, 40, 51, 0.9)',
+                    titleColor: '#66FCF1',
+                    bodyColor: '#C5C6C7',
+                    borderColor: '#45A29E',
+                    borderWidth: 1,
+                    callbacks: {
+                        title: function(tooltipItems) {
+                            return tooltipItems[0].label;
+                        },
+                        label: function(context) {
+                            const dateKey = context.label;
+                            const datasetLabel = context.dataset.label;
+                            
+                            if (datasetLabel === 'Cash Inflow') {
+                                // Get all inflow transactions for this date
+                                const inflowTrans = cashFlowData.filter(t => 
+                                    formatDate(t.date) === dateKey && t.inflow > 0
+                                );
+                                
+                                if (inflowTrans.length === 0) return 'No inflow';
+                                
+                                const labels = ['Cash Inflow:'];
+                                inflowTrans.forEach(t => {
+                                    labels.push(`  ${t.head}: ${formatCurrency(t.inflow)}`);
+                                });
+                                labels.push(`  Total: ₹${Math.abs(context.parsed.y).toFixed(2)} L`);
+                                return labels;
+                                
+                            } else if (datasetLabel === 'Cash Outflow') {
+                                // Get all outflow transactions for this date
+                                const outflowTrans = cashFlowData.filter(t => 
+                                    formatDate(t.date) === dateKey && t.outflow > 0
+                                );
+                                
+                                if (outflowTrans.length === 0) return 'No outflow';
+                                
+                                const labels = ['Cash Outflow:'];
+                                outflowTrans.forEach(t => {
+                                    labels.push(`  ${t.head}: ${formatCurrency(t.outflow)}`);
+                                });
+                                labels.push(`  Total: ₹${Math.abs(context.parsed.y).toFixed(2)} L`);
+                                return labels;
+                                
+                            } else {
+                                // Balance line
+                                return `Balance: ₹${context.parsed.y.toFixed(2)} L`;
+                            }
                         }
-                        return '';
-                    },
-                    label: function(context) {
-                        let label = context.dataset.label || '';
-                        if (label) {
-                            label += ': ';
-                        }
-                        label += '₹' + Math.abs(context.parsed.y).toFixed(2) + ' L';
-                        return label;
                     }
                 }
-            }
             },
             scales: {
                 x: {
