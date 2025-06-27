@@ -8,6 +8,8 @@ async function loadComponent(componentPath, targetId) {
         // Initialize component-specific functionality after loading
         if (targetId === 'cashflow-tab') {
             initializeCashFlowForm();
+        } else if (targetId === 'pnl-tab') {
+            initializePnLStatement();
         }
     } catch (error) {
         console.error('Error loading component:', error);
@@ -65,6 +67,88 @@ function initializeCashFlowForm() {
     if (downloadIcon) {
         downloadIcon.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>';
     }
+}
+
+// Initialize P&L Statement functionality
+function initializePnLStatement() {
+    // Add SVG icons
+    const refreshIcon = document.querySelector('.icon-refresh');
+    if (refreshIcon) {
+        refreshIcon.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>';
+    }
+    
+    const pdfIcon = document.querySelector('.icon-pdf');
+    if (pdfIcon) {
+        pdfIcon.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>';
+    }
+    
+    const excelIcon = document.querySelector('.icon-excel');
+    if (excelIcon) {
+        excelIcon.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>';
+    }
+}
+
+// P&L Statement Functions
+function refreshPnL() {
+    console.log('Refreshing P&L Statement...');
+    
+    // Check if cash flow data exists
+    if (cashFlowData.length === 0) {
+        alert('Please run the Cash Flow simulation first');
+        return;
+    }
+    
+    // Generate P&L data
+    generatePnLStatement();
+}
+
+function exportPnLPDF() {
+    console.log('Exporting P&L to PDF...');
+    alert('PDF export will be implemented in a future update');
+}
+
+function exportPnLExcel() {
+    console.log('Exporting P&L to Excel...');
+    alert('Excel export will be implemented in a future update');
+}
+
+// Generate P&L Statement from cash flow data
+function generatePnLStatement() {
+    const selectedPeriod = document.getElementById('pnl-period').value;
+    
+    // Calculate P&L data
+    const pnlData = calculatePnLData(selectedPeriod);
+    
+    // Display P&L statement
+    displayPnLStatement(pnlData);
+    
+    // Generate charts
+    generatePnLCharts(pnlData);
+    
+    // Generate insights
+    generatePnLInsights(pnlData);
+}
+
+// Placeholder functions to be implemented
+function calculatePnLData(period) {
+    console.log('Calculating P&L for period:', period);
+    // Will implement the calculation logic
+    return {};
+}
+
+function displayPnLStatement(data) {
+    console.log('Displaying P&L statement');
+    // Will implement the display logic
+}
+
+function generatePnLCharts(data) {
+    console.log('Generating P&L charts');
+    // Will implement the chart generation
+}
+
+function generatePnLInsights(data) {
+    console.log('Generating P&L insights');
+    // Will implement the insights generation
 }
 
 // Global variables to store simulation data

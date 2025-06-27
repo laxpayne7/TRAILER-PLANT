@@ -29,13 +29,7 @@
 
         <!-- Profit & Loss Statement Tab -->
         <div id="pnl-tab" class="tab-content">
-            <div class="tab-header">
-                <h2>Profit & Loss Statement</h2>
-                <p>Comprehensive P&L analysis based on simulated cash flows</p>
-            </div>
-            <div class="placeholder">
-                <p>P&L Statement content will be added in Phase 5</p>
-            </div>
+            <!-- Content will be loaded from pnl-statement.html -->
         </div>
 
         <!-- Balance Sheet Tab -->
@@ -53,8 +47,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="js/script.js"></script>
     <script>
-        // Load the cashflow form component
+        // Load components
         loadComponent('components/cashflow-form.html', 'cashflow-tab');
+        loadComponent('components/pnl-statement.html', 'pnl-tab');
     </script>
 </body>
 </html>
