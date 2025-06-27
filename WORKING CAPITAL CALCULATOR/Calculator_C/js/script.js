@@ -132,18 +132,456 @@ function generatePnLStatement() {
 // Placeholder functions to be implemented
 function calculatePnLData(period) {
     console.log('Calculating P&L for period:', period);
-    // Will implement the calculation logic
-    return {};
+    
+    // Initialize P&L data structure
+    const pnlData = {
+        period: period,
+        revenue: {
+            gross: 0,
+            gstOnSales: 0,
+            net: 0,
+            unitsSold: 0,
+            monthlyBreakdown: {
+                october: { units: 0, amount: 0 },
+                november: { units: 0, amount: 0 },
+                december: { units: 0, amount: 0 }
+            }
+        },
+        cogs: {
+            materials: {
+                steel: 0,
+                boughtOut: 0,
+                subtotal: 0,
+                gst: 0,
+                total: 0
+            },
+            labour: 0,
+            total: 0
+        },
+        grossProfit: 0,
+        grossMarginPercent: 0,
+        operatingExpenses: {
+            fixed: 0
+        },
+        netProfit: 0,
+        netMarginPercent: 0
+    };
+    
+    // Get input values for calculations
+    const inputs = collectInputValues();
+    
+    // Process cash flow data to extract P&L information
+    cashFlowData.forEach(transaction => {
+        const transDate = new Date(transaction.date);
+        const month = transDate.getMonth(); // 9=Oct, 10=Nov, 11=Dec
+        const monthKey = month === 9 ? 'october' : month === 10 ? 'november' : 'december';
+        
+        // Track Revenue (when delivered, not when payment received)
+        if (transaction.head === 'Sales - Full Payment' || 
+            transaction.head === 'Sales - Final Payment') {
+            
+            // Extract units from transaction details
+            const unitsMatch = transaction.details.match(/C\d+U\d+-C\d+U(\d+)/);
+            let units = 6; // default
+            
+            if (unitsMatch) {
+                const endUnit = parseInt(unitsMatch[1]);
+                const startUnit = endUnit - 5; // assuming 6 units per order
+                units = endUnit - startUnit + 1;
+            }
+            
+            // For final payment, this represents delivery
+            if (transaction.head === 'Sales - Final Payment' || 
+                transaction.head === 'Sales - Full Payment') {
+                
+                const baseAmount = inputs.cashInPerUnit * units;
+                pnlData.revenue.gross += baseAmount;
+                pnlData.revenue.unitsSold += units;
+                
+                // Monthly breakdown
+                pnlData.revenue.monthlyBreakdown[monthKey].units += units;
+                pnlData.revenue.monthlyBreakdown[monthKey].amount += baseAmount;
+                
+                // GST calculation
+                if (inputs.applyGST) {
+                    const gstAmount = baseAmount * (inputs.gstRate / 100);
+                    pnlData.revenue.gstOnSales += gstAmount;
+                }
+            }
+        }
+        
+        // Track Material Costs
+        if (transaction.head === 'Materials') {
+            const unitsMatch = transaction.details.match(/C\d+U\d+-C\d+U(\d+)/);
+            let units = 6; // default
+            
+            if (unitsMatch) {
+                const endUnit = parseInt(unitsMatch[1]);
+                const startUnit = endUnit - 5;
+                units = endUnit - startUnit + 1;
+            }
+            
+            const steelCost = inputs.steelCost * units;
+            const boughtOutCost = inputs.boughtOutCost * units;
+            
+            pnlData.cogs.materials.steel += steelCost;
+            pnlData.cogs.materials.boughtOut += boughtOutCost;
+            
+            if (inputs.applyGST) {
+                const materialGST = (steelCost + boughtOutCost) * (inputs.gstRate / 100);
+                pnlData.cogs.materials.gst += materialGST;
+            }
+        }
+        
+        // Track Labour Costs
+        if (transaction.head === 'Labour') {
+            pnlData.cogs.labour += transaction.outflow;
+        }
+        
+        // Track Operating Expenses
+        if (transaction.head === 'Fixed Costs') {
+            pnlData.operatingExpenses.fixed += transaction.outflow;
+        }
+    });
+    
+    // Calculate derived values
+    pnlData.revenue.net = pnlData.revenue.gross; // GST is on top of this
+    
+    pnlData.cogs.materials.subtotal = pnlData.cogs.materials.steel + pnlData.cogs.materials.boughtOut;
+    pnlData.cogs.materials.total = pnlData.cogs.materials.subtotal + pnlData.cogs.materials.gst;
+    pnlData.cogs.total = pnlData.cogs.materials.total + pnlData.cogs.labour;
+    
+    pnlData.grossProfit = pnlData.revenue.net - pnlData.cogs.total;
+    pnlData.grossMarginPercent = (pnlData.grossProfit / pnlData.revenue.net) * 100;
+    
+    pnlData.netProfit = pnlData.grossProfit - pnlData.operatingExpenses.fixed;
+    pnlData.netMarginPercent = (pnlData.netProfit / pnlData.revenue.net) * 100;
+    
+    // Filter by period if needed
+    if (period !== 'oct-dec') {
+        // Implement monthly filtering logic here if needed
+    }
+    
+    return pnlData;
 }
 
 function displayPnLStatement(data) {
     console.log('Displaying P&L statement');
-    // Will implement the display logic
+    
+    const statementContainer = document.querySelector('.statement-container');
+    if (!statementContainer) return;
+    
+    let statementHTML = `
+        <table class="pnl-table">
+            <thead>
+                <tr>
+                    <th colspan="2">PROFIT & LOSS STATEMENT</th>
+                </tr>
+                <tr>
+                    <th colspan="2" class="period-header">Period: ${getPeriodLabel(data.period)}</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Revenue Section -->
+                <tr class="section-header">
+                    <td colspan="2">REVENUE</td>
+                </tr>
+                <tr>
+                    <td class="indent-1">Sales Revenue (${data.revenue.unitsSold} units)</td>
+                    <td class="amount">${formatCurrency(data.revenue.gross)}</td>
+                </tr>`;
+    
+    if (data.revenue.gstOnSales > 0) {
+        statementHTML += `
+                <tr>
+                    <td class="indent-1">Add: GST on Sales (${collectInputValues().gstRate}%)</td>
+                    <td class="amount">${formatCurrency(data.revenue.gstOnSales)}</td>
+                </tr>
+                <tr class="subtotal">
+                    <td class="indent-1">Total Sales Value</td>
+                    <td class="amount">${formatCurrency(data.revenue.gross + data.revenue.gstOnSales)}</td>
+                </tr>`;
+    }
+    
+    statementHTML += `
+                <tr class="total-row">
+                    <td>Net Revenue</td>
+                    <td class="amount">${formatCurrency(data.revenue.net)}</td>
+                </tr>
+                
+                <!-- COGS Section -->
+                <tr class="section-header">
+                    <td colspan="2">COST OF GOODS SOLD</td>
+                </tr>
+                <tr class="subsection">
+                    <td class="indent-1">Material Costs</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="indent-2">Steel Materials</td>
+                    <td class="amount">${formatCurrency(data.cogs.materials.steel)}</td>
+                </tr>
+                <tr>
+                    <td class="indent-2">Bought-out Materials</td>
+                    <td class="amount">${formatCurrency(data.cogs.materials.boughtOut)}</td>
+                </tr>`;
+    
+    if (data.cogs.materials.gst > 0) {
+        statementHTML += `
+                <tr>
+                    <td class="indent-2">Add: GST on Materials</td>
+                    <td class="amount">${formatCurrency(data.cogs.materials.gst)}</td>
+                </tr>`;
+    }
+    
+    statementHTML += `
+                <tr class="subtotal">
+                    <td class="indent-1">Total Material Costs</td>
+                    <td class="amount">${formatCurrency(data.cogs.materials.total)}</td>
+                </tr>
+                <tr>
+                    <td class="indent-1">Direct Labour</td>
+                    <td class="amount">${formatCurrency(data.cogs.labour)}</td>
+                </tr>
+                <tr class="total-row">
+                    <td>Total COGS</td>
+                    <td class="amount">${formatCurrency(data.cogs.total)}</td>
+                </tr>
+                
+                <!-- Gross Profit -->
+                <tr class="gross-profit">
+                    <td>GROSS PROFIT</td>
+                    <td class="amount ${data.grossProfit >= 0 ? 'positive' : 'negative'}">${formatCurrency(data.grossProfit)}</td>
+                </tr>
+                <tr>
+                    <td class="indent-1 metric">Gross Margin %</td>
+                    <td class="amount metric">${data.grossMarginPercent.toFixed(1)}%</td>
+                </tr>
+                
+                <!-- Operating Expenses -->
+                <tr class="section-header">
+                    <td colspan="2">OPERATING EXPENSES</td>
+                </tr>
+                <tr>
+                    <td class="indent-1">Fixed Monthly Costs</td>
+                    <td class="amount">${formatCurrency(data.operatingExpenses.fixed)}</td>
+                </tr>
+                <tr class="total-row">
+                    <td>Total Operating Expenses</td>
+                    <td class="amount">${formatCurrency(data.operatingExpenses.fixed)}</td>
+                </tr>
+                
+                <!-- Net Profit -->
+                <tr class="net-profit">
+                    <td>NET PROFIT BEFORE TAX</td>
+                    <td class="amount ${data.netProfit >= 0 ? 'positive' : 'negative'}">${formatCurrency(data.netProfit)}</td>
+                </tr>
+                <tr>
+                    <td class="indent-1 metric">Net Margin %</td>
+                    <td class="amount metric">${data.netMarginPercent.toFixed(1)}%</td>
+                </tr>
+            </tbody>
+        </table>
+    `;
+    
+    statementContainer.innerHTML = statementHTML;
+}
+
+// Helper function to get period label
+function getPeriodLabel(period) {
+    const labels = {
+        'oct-dec': 'October - December 2025',
+        'oct': 'October 2025',
+        'nov': 'November 2025',
+        'dec': 'December 2025'
+    };
+    return labels[period] || period;
 }
 
 function generatePnLCharts(data) {
     console.log('Generating P&L charts');
-    // Will implement the chart generation
+    
+    // Destroy existing charts if they exist
+    if (window.pnlCharts) {
+        Object.values(window.pnlCharts).forEach(chart => chart.destroy());
+    }
+    window.pnlCharts = {};
+    
+    // 1. Cost Breakdown Pie Chart
+    const costCtx = document.getElementById('costBreakdownChart');
+    if (costCtx) {
+        window.pnlCharts.cost = new Chart(costCtx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Materials', 'Labour', 'Fixed Costs'],
+                datasets: [{
+                    data: [
+                        data.cogs.materials.total,
+                        data.cogs.labour,
+                        data.operatingExpenses.fixed
+                    ],
+                    backgroundColor: [
+                        '#66FCF1',
+                        '#45A29E',
+                        '#C5C6C7'
+                    ],
+                    borderColor: '#1F2833',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#C5C6C7',
+                            padding: 10,
+                            font: { size: 12 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.parsed;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return context.label + ': ' + formatCurrency(value) + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // 2. Monthly Revenue Trend Bar Chart
+    const revenueCtx = document.getElementById('revenueTrendChart');
+    if (revenueCtx) {
+        window.pnlCharts.revenue = new Chart(revenueCtx.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ['October', 'November', 'December'],
+                datasets: [{
+                    label: 'Revenue',
+                    data: [
+                        data.revenue.monthlyBreakdown.october.amount,
+                        data.revenue.monthlyBreakdown.november.amount,
+                        data.revenue.monthlyBreakdown.december.amount
+                    ],
+                    backgroundColor: '#66FCF1',
+                    borderColor: '#45A29E',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const month = context.label;
+                                const monthKey = month.toLowerCase();
+                                const units = data.revenue.monthlyBreakdown[monthKey].units;
+                                return [
+                                    'Revenue: ' + formatCurrency(context.parsed.y),
+                                    'Units: ' + units
+                                ];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(69, 162, 158, 0.1)' },
+                        ticks: {
+                            color: '#8B8C8D',
+                            callback: function(value) {
+                                return '₹' + (value / 100000).toFixed(0) + 'L';
+                            }
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#8B8C8D' }
+                    }
+                }
+            }
+        });
+    }
+    
+    // 3. Profit Margin Trend Line Chart
+    const marginCtx = document.getElementById('marginTrendChart');
+    if (marginCtx) {
+        // Calculate monthly margins (simplified for now)
+        const monthlyMargins = calculateMonthlyMargins(data);
+        
+        window.pnlCharts.margin = new Chart(marginCtx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: ['October', 'November', 'December'],
+                datasets: [{
+                    label: 'Gross Margin %',
+                    data: monthlyMargins.gross,
+                    borderColor: '#66FCF1',
+                    backgroundColor: 'rgba(102, 252, 241, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                }, {
+                    label: 'Net Margin %',
+                    data: monthlyMargins.net,
+                    borderColor: '#45A29E',
+                    backgroundColor: 'rgba(69, 162, 158, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#C5C6C7',
+                            padding: 10,
+                            font: { size: 12 }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(69, 162, 158, 0.1)' },
+                        ticks: {
+                            color: '#8B8C8D',
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#8B8C8D' }
+                    }
+                }
+            }
+        });
+    }
+}
+
+// Helper function to calculate monthly margins
+function calculateMonthlyMargins(data) {
+    // For now, using overall margin for all months
+    // In a real implementation, you'd calculate per month
+    return {
+        gross: [data.grossMarginPercent, data.grossMarginPercent, data.grossMarginPercent],
+        net: [data.netMarginPercent, data.netMarginPercent, data.netMarginPercent]
+    };
 }
 
 function generatePnLInsights(data) {
