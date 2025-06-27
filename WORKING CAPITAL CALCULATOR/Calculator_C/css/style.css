@@ -829,6 +829,77 @@ button:focus {
     background-color: rgba(69, 162, 158, 0.05);
 }
 
+/* P&L Insights Styles */
+.insights-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.insight-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+    background-color: var(--primary-dark);
+    border-radius: 8px;
+    border-left: 3px solid;
+    transition: all 0.2s ease;
+}
+
+.insight-item:hover {
+    transform: translateX(4px);
+}
+
+.insight-item.positive {
+    border-left-color: var(--success);
+}
+
+.insight-item.negative {
+    border-left-color: var(--danger);
+}
+
+.insight-item.neutral {
+    border-left-color: var(--text-muted);
+}
+
+.insight-item.info {
+    border-left-color: var(--accent-primary);
+}
+
+.insight-icon {
+    font-size: 18px;
+    font-weight: bold;
+    min-width: 24px;
+    text-align: center;
+}
+
+.insight-item.positive .insight-icon {
+    color: var(--success);
+}
+
+.insight-item.negative .insight-icon {
+    color: var(--danger);
+}
+
+.insight-item.neutral .insight-icon {
+    color: var(--text-muted);
+}
+
+.insight-item.info .insight-icon {
+    color: var(--accent-primary);
+}
+
+.insight-text {
+    flex: 1;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-light);
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
     .pnl-content {

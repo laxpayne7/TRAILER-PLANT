@@ -167,6 +167,16 @@ function calculatePnLData(period) {
         netMarginPercent: 0
     };
     
+    // DEBUG: Let's see what transactions we have
+    console.log('=== DEBUG: Transaction Details ===');
+    cashFlowData.forEach(transaction => {
+        if (transaction.head === 'Materials' || 
+            transaction.head === 'Sales - Full Payment' || 
+            transaction.head === 'Sales - Final Payment') {
+            console.log(`${transaction.head}: ${transaction.details}`);
+        }
+    });
+
     // Get input values for calculations
     const inputs = collectInputValues();
     
@@ -181,44 +191,38 @@ function calculatePnLData(period) {
             transaction.head === 'Sales - Final Payment') {
             
             // Extract units from transaction details
-            const unitsMatch = transaction.details.match(/C\d+U\d+-C\d+U(\d+)/);
-            let units = 6; // default
+            const unitsMatch = transaction.details.match(/C\d+U(\d+)-C\d+U(\d+)/);
+            let units = 6; // fallback default
             
             if (unitsMatch) {
-                const endUnit = parseInt(unitsMatch[1]);
-                const startUnit = endUnit - 5; // assuming 6 units per order
+                const startUnit = parseInt(unitsMatch[1]);  // First capture group
+                const endUnit = parseInt(unitsMatch[2]);    // Second capture group
                 units = endUnit - startUnit + 1;
+                console.log(`Revenue: ${transaction.details}, Units: ${units}`);
             }
             
-            // For final payment, this represents delivery
-            if (transaction.head === 'Sales - Final Payment' || 
-                transaction.head === 'Sales - Full Payment') {
-                
-                const baseAmount = inputs.cashInPerUnit * units;
-                pnlData.revenue.gross += baseAmount;
-                pnlData.revenue.unitsSold += units;
-                
-                // Monthly breakdown
-                pnlData.revenue.monthlyBreakdown[monthKey].units += units;
-                pnlData.revenue.monthlyBreakdown[monthKey].amount += baseAmount;
-                
-                // GST calculation
-                if (inputs.applyGST) {
-                    const gstAmount = baseAmount * (inputs.gstRate / 100);
-                    pnlData.revenue.gstOnSales += gstAmount;
-                }
-            }
+            const baseAmount = inputs.cashInPerUnit * units;
+            pnlData.revenue.gross += baseAmount;
+            pnlData.revenue.unitsSold += units;
+            
+            // Monthly breakdown
+            pnlData.revenue.monthlyBreakdown[monthKey].units += units;
+            pnlData.revenue.monthlyBreakdown[monthKey].amount += baseAmount;
+            
+            // GST is not included in P&L - it's a pass-through
+            // P&L shows net amounts only
         }
         
         // Track Material Costs
         if (transaction.head === 'Materials') {
-            const unitsMatch = transaction.details.match(/C\d+U\d+-C\d+U(\d+)/);
-            let units = 6; // default
+            const unitsMatch = transaction.details.match(/C\d+U(\d+)-C\d+U(\d+)/);
+            let units = 6; // fallback default
             
             if (unitsMatch) {
-                const endUnit = parseInt(unitsMatch[1]);
-                const startUnit = endUnit - 5;
+                const startUnit = parseInt(unitsMatch[1]);  // First capture group
+                const endUnit = parseInt(unitsMatch[2]);    // Second capture group
                 units = endUnit - startUnit + 1;
+                console.log(`Materials: ${transaction.details}, Units: ${units}`);
             }
             
             const steelCost = inputs.steelCost * units;
@@ -227,10 +231,7 @@ function calculatePnLData(period) {
             pnlData.cogs.materials.steel += steelCost;
             pnlData.cogs.materials.boughtOut += boughtOutCost;
             
-            if (inputs.applyGST) {
-                const materialGST = (steelCost + boughtOutCost) * (inputs.gstRate / 100);
-                pnlData.cogs.materials.gst += materialGST;
-            }
+            // GST on materials is input tax credit - not a P&L cost
         }
         
         // Track Labour Costs
@@ -248,7 +249,7 @@ function calculatePnLData(period) {
     pnlData.revenue.net = pnlData.revenue.gross; // GST is on top of this
     
     pnlData.cogs.materials.subtotal = pnlData.cogs.materials.steel + pnlData.cogs.materials.boughtOut;
-    pnlData.cogs.materials.total = pnlData.cogs.materials.subtotal + pnlData.cogs.materials.gst;
+    pnlData.cogs.materials.total = pnlData.cogs.materials.subtotal;
     pnlData.cogs.total = pnlData.cogs.materials.total + pnlData.cogs.labour;
     
     pnlData.grossProfit = pnlData.revenue.net - pnlData.cogs.total;
@@ -259,7 +260,54 @@ function calculatePnLData(period) {
     
     // Filter by period if needed
     if (period !== 'oct-dec') {
-        // Implement monthly filtering logic here if needed
+        // Create a filtered copy for single months
+        const filteredData = JSON.parse(JSON.stringify(pnlData)); // Deep clone
+        
+        // Reset totals
+        filteredData.revenue.gross = 0;
+        filteredData.revenue.net = 0;
+        filteredData.revenue.unitsSold = 0;
+        filteredData.revenue.gstOnSales = 0;
+        
+        // Get data for selected month only
+        const monthMap = { 'oct': 'october', 'nov': 'november', 'dec': 'december' };
+        const selectedMonth = monthMap[period];
+        
+        if (selectedMonth) {
+            // Revenue for selected month
+            filteredData.revenue.gross = filteredData.revenue.monthlyBreakdown[selectedMonth].amount;
+            filteredData.revenue.net = filteredData.revenue.gross;
+            filteredData.revenue.unitsSold = filteredData.revenue.monthlyBreakdown[selectedMonth].units;
+            
+            // Recalculate GST for the month
+            if (inputs.applyGST) {
+                filteredData.revenue.gstOnSales = filteredData.revenue.gross * (inputs.gstRate / 100);
+            }
+            
+            // Materials and labour for the selected month (proportional)
+            const monthPercent = filteredData.revenue.monthlyBreakdown[selectedMonth].units / pnlData.revenue.unitsSold;
+            
+            filteredData.cogs.materials.steel = pnlData.cogs.materials.steel * monthPercent;
+            filteredData.cogs.materials.boughtOut = pnlData.cogs.materials.boughtOut * monthPercent;
+            filteredData.cogs.materials.gst = pnlData.cogs.materials.gst * monthPercent;
+            filteredData.cogs.materials.subtotal = filteredData.cogs.materials.steel + filteredData.cogs.materials.boughtOut;
+            filteredData.cogs.materials.total = filteredData.cogs.materials.subtotal + filteredData.cogs.materials.gst;
+            
+            filteredData.cogs.labour = pnlData.cogs.labour * monthPercent;
+            filteredData.cogs.total = filteredData.cogs.materials.total + filteredData.cogs.labour;
+            
+            // Fixed costs for one month
+            filteredData.operatingExpenses.fixed = pnlData.operatingExpenses.fixed / 3;
+            
+            // Recalculate profits and margins
+            filteredData.grossProfit = filteredData.revenue.net - filteredData.cogs.total;
+            filteredData.grossMarginPercent = (filteredData.grossProfit / filteredData.revenue.net) * 100 || 0;
+            
+            filteredData.netProfit = filteredData.grossProfit - filteredData.operatingExpenses.fixed;
+            filteredData.netMarginPercent = (filteredData.netProfit / filteredData.revenue.net) * 100 || 0;
+        }
+        
+        return filteredData;
     }
     
     return pnlData;
@@ -291,17 +339,7 @@ function displayPnLStatement(data) {
                     <td class="amount">${formatCurrency(data.revenue.gross)}</td>
                 </tr>`;
     
-    if (data.revenue.gstOnSales > 0) {
-        statementHTML += `
-                <tr>
-                    <td class="indent-1">Add: GST on Sales (${collectInputValues().gstRate}%)</td>
-                    <td class="amount">${formatCurrency(data.revenue.gstOnSales)}</td>
-                </tr>
-                <tr class="subtotal">
-                    <td class="indent-1">Total Sales Value</td>
-                    <td class="amount">${formatCurrency(data.revenue.gross + data.revenue.gstOnSales)}</td>
-                </tr>`;
-    }
+    // GST is not shown in P&L - it's a balance sheet item
     
     statementHTML += `
                 <tr class="total-row">
@@ -326,13 +364,7 @@ function displayPnLStatement(data) {
                     <td class="amount">${formatCurrency(data.cogs.materials.boughtOut)}</td>
                 </tr>`;
     
-    if (data.cogs.materials.gst > 0) {
-        statementHTML += `
-                <tr>
-                    <td class="indent-2">Add: GST on Materials</td>
-                    <td class="amount">${formatCurrency(data.cogs.materials.gst)}</td>
-                </tr>`;
-    }
+   // GST input credit is not shown in P&L
     
     statementHTML += `
                 <tr class="subtotal">
@@ -586,7 +618,108 @@ function calculateMonthlyMargins(data) {
 
 function generatePnLInsights(data) {
     console.log('Generating P&L insights');
-    // Will implement the insights generation
+    
+    const insightsContainer = document.querySelector('.insights-container');
+    if (!insightsContainer) return;
+    
+    const insights = [];
+    
+    // 1. Gross Margin Analysis
+    if (data.grossMarginPercent > 20) {
+        insights.push({
+            type: 'positive',
+            icon: '✓',
+            text: `Strong gross margin of ${data.grossMarginPercent.toFixed(1)}% indicates healthy unit economics`
+        });
+    } else if (data.grossMarginPercent > 10) {
+        insights.push({
+            type: 'neutral',
+            icon: '→',
+            text: `Gross margin of ${data.grossMarginPercent.toFixed(1)}% is moderate - consider optimizing material costs`
+        });
+    } else {
+        insights.push({
+            type: 'negative',
+            icon: '!',
+            text: `Low gross margin of ${data.grossMarginPercent.toFixed(1)}% requires immediate attention`
+        });
+    }
+    
+    // 2. Revenue Growth Analysis
+    const octRev = data.revenue.monthlyBreakdown.october.amount;
+    const decRev = data.revenue.monthlyBreakdown.december.amount;
+    if (decRev > 0 && octRev > 0) {
+        const growth = ((decRev - octRev) / octRev * 100).toFixed(0);
+        if (growth > 0) {
+            insights.push({
+                type: 'positive',
+                icon: '↑',
+                text: `Revenue grew ${growth}% from October to December, showing positive momentum`
+            });
+        }
+    }
+    
+    // 3. Fixed Cost Efficiency
+    const fixedCostPercent = (data.operatingExpenses.fixed / data.revenue.net * 100).toFixed(1);
+    if (fixedCostPercent < 10) {
+        insights.push({
+            type: 'positive',
+            icon: '✓',
+            text: `Fixed costs at ${fixedCostPercent}% of revenue demonstrate excellent operating leverage`
+        });
+    } else if (fixedCostPercent < 20) {
+        insights.push({
+            type: 'neutral',
+            icon: '→',
+            text: `Fixed costs represent ${fixedCostPercent}% of revenue - reasonable but room for improvement`
+        });
+    } else {
+        insights.push({
+            type: 'negative',
+            icon: '!',
+            text: `High fixed costs at ${fixedCostPercent}% of revenue may impact profitability`
+        });
+    }
+    
+    // 4. Unit Economics
+    const avgRevenuePerUnit = data.revenue.gross / data.revenue.unitsSold;
+    const avgCostPerUnit = data.cogs.total / data.revenue.unitsSold;
+    const profitPerUnit = avgRevenuePerUnit - avgCostPerUnit;
+    
+    insights.push({
+        type: 'info',
+        icon: '₹',
+        text: `Average profit per unit: ${formatCurrency(profitPerUnit)} (Revenue: ${formatCurrency(avgRevenuePerUnit)} - COGS: ${formatCurrency(avgCostPerUnit)})`
+    });
+    
+    // 5. Net Profitability
+    if (data.netProfit > 0) {
+        insights.push({
+            type: 'positive',
+            icon: '✓',
+            text: `Net profit of ${formatCurrency(data.netProfit)} (${data.netMarginPercent.toFixed(1)}% margin) shows healthy business performance`
+        });
+    } else {
+        insights.push({
+            type: 'negative',
+            icon: '!',
+            text: `Net loss of ${formatCurrency(Math.abs(data.netProfit))} requires strategic review`
+        });
+    }
+    
+    // Generate HTML for insights
+    let insightsHTML = '<ul class="insights-list">';
+    insights.forEach(insight => {
+        insightsHTML += `
+            <li class="insight-item ${insight.type}">
+                <span class="insight-icon">${insight.icon}</span>
+                <span class="insight-text">${insight.text}</span>
+            </li>
+        `;
+    });
+    insightsHTML += '</ul>';
+    
+    insightsContainer.innerHTML = insightsHTML;
 }
 
 // Global variables to store simulation data
