@@ -110,8 +110,8 @@ function simulateCashFlow() {
     const partnerInvestment = Math.abs(minBalance);
     summaryData.partnerInvestment = partnerInvestment;
     
-    // Update the Partner B investment field
-    document.getElementById('partner-investment').value = partnerInvestment;
+    // Update the Partner B investment in summary
+    document.getElementById('partner-investment').textContent = formatCurrency(partnerInvestment);
     
     // Second pass: Calculate with Partner B investment
     cashFlowData = calculateCashFlows(inputs, partnerInvestment);
@@ -217,6 +217,7 @@ function calculateOrders(inputs, cycles) {
 // Calculate cash flows
 function calculateCashFlows(inputs, partnerInvestment) {
     const transactions = [];
+    let pendingPayments = [];
     let balance = inputs.initialBalance;
     
     const startDate = new Date(inputs.startDate);
@@ -280,6 +281,30 @@ function calculateCashFlows(inputs, partnerInvestment) {
             });
         }
 
+        // Process any pending payments due today
+        const dueToday = pendingPayments.filter(p => {
+            const pDate = new Date(p.date);
+            return pDate.getDate() === currentDate.getDate() && 
+                   pDate.getMonth() === currentDate.getMonth() && 
+                   pDate.getFullYear() === currentDate.getFullYear();
+        });
+
+        dueToday.forEach(payment => {
+            balance += payment.amount;
+            transactions.push({
+                date: new Date(currentDate),
+                day: dayCount,
+                details: payment.details + ' (Delayed Receipt)',
+                head: payment.head,
+                outflow: 0,
+                inflow: payment.amount,
+                balance: balance
+            });
+        });
+
+        // Remove processed payments from pending
+        pendingPayments = pendingPayments.filter(p => !dueToday.includes(p));
+
         // Check for order arrivals and payments based on cycles
         if (dayCount === inputs.initialOrderDay) {
             // Day 8: First order with full payment (special case)
@@ -288,16 +313,28 @@ function calculateCashFlows(inputs, partnerInvestment) {
             const gstAmount = inputs.applyGST ? revenue * (inputs.gstRate / 100) : 0;
             const totalRevenue = revenue + gstAmount;
             
-            balance += totalRevenue;
-            transactions.push({
-                date: new Date(currentDate),
-                day: dayCount,
-                details: `Order 1 - Full Payment - C01U001-C01U${String(order.quantity).padStart(3, '0')}`,
-                head: 'Sales - Full Payment',
-                outflow: 0,
-                inflow: totalRevenue,
-                balance: balance
-            });
+            if (inputs.applyDelay && inputs.finalDelayDays > 0) {
+                // Delay the payment
+                const paymentDate = addWorkingDays(currentDate, inputs.finalDelayDays, startDate);
+                pendingPayments.push({
+                    date: paymentDate,
+                    details: `Order 1 - Full Payment - C01U001-C01U${String(order.quantity).padStart(3, '0')}`,
+                    head: 'Sales - Full Payment',
+                    amount: totalRevenue
+                });
+            } else {
+                // Process immediately
+                balance += totalRevenue;
+                transactions.push({
+                    date: new Date(currentDate),
+                    day: dayCount,
+                    details: `Order 1 - Full Payment - C01U001-C01U${String(order.quantity).padStart(3, '0')}`,
+                    head: 'Sales - Full Payment',
+                    outflow: 0,
+                    inflow: totalRevenue,
+                    balance: balance
+                });
+            }
         }
 
         // For subsequent cycles: 50% advance on cycle start (Day 1 of cycle)
@@ -307,18 +344,30 @@ function calculateCashFlows(inputs, partnerInvestment) {
             if (order) {
                 const advancePayment = inputs.cashInPerUnit * order.quantity * 0.5;
                 const gstAmount = inputs.applyGST ? advancePayment * (inputs.gstRate / 100) : 0;
-                const totalAdvance  = advancePayment + gstAmount;
+                const totalAdvance = advancePayment + gstAmount;
                 
-                balance += totalAdvance;
-                transactions.push({
-                    date: new Date(currentDate),
-                    day: dayCount,
-                    details: `Order ${order.orderNumber} - Advance Payment (50%) for ${startingCycle.unitsProduced}`,
-                    head: 'Sales - Advance',
-                    outflow: 0,
-                    inflow: totalAdvance,
-                    balance: balance
-                });
+                if (inputs.applyDelay && inputs.advanceDelayDays > 0) {
+                    // Delay the advance payment
+                    const paymentDate = addWorkingDays(currentDate, inputs.advanceDelayDays, startDate);
+                    pendingPayments.push({
+                        date: paymentDate,
+                        details: `Order ${order.orderNumber} - Advance Payment (50%) for ${startingCycle.unitsProduced}`,
+                        head: 'Sales - Advance',
+                        amount: totalAdvance
+                    });
+                } else {
+                    // Process immediately
+                    balance += totalAdvance;
+                    transactions.push({
+                        date: new Date(currentDate),
+                        day: dayCount,
+                        details: `Order ${order.orderNumber} - Advance Payment (50%) for ${startingCycle.unitsProduced}`,
+                        head: 'Sales - Advance',
+                        outflow: 0,
+                        inflow: totalAdvance,
+                        balance: balance
+                    });
+                }
             }
         }
 
@@ -329,20 +378,32 @@ function calculateCashFlows(inputs, partnerInvestment) {
             if (order) {
                 const finalPayment = inputs.cashInPerUnit * order.quantity * 0.5;
                 const gstAmount = inputs.applyGST ? finalPayment * (inputs.gstRate / 100) : 0;
-                const totalFinal  = finalPayment + gstAmount;
+                const totalFinal = finalPayment + gstAmount;
                 
-                balance += totalFinal ;
-                transactions.push({
-                    date: new Date(currentDate),
-                    day: dayCount,
-                    details: `Order ${order.orderNumber} - Final Payment (50%) on Delivery - ${endingCycle.unitsProduced}`,
-                    head: 'Sales - Final Payment',
-                    outflow: 0,
-                    inflow: totalFinal,
-                    balance: balance
-                });
+                if (inputs.applyDelay && inputs.finalDelayDays > 0) {
+                    // Delay the final payment
+                    const paymentDate = addWorkingDays(currentDate, inputs.finalDelayDays, startDate);
+                    pendingPayments.push({
+                        date: paymentDate,
+                        details: `Order ${order.orderNumber} - Final Payment (50%) on Delivery - ${endingCycle.unitsProduced}`,
+                        head: 'Sales - Final Payment',
+                        amount: totalFinal
+                    });
+                } else {
+                    // Process immediately
+                    balance += totalFinal;
+                    transactions.push({
+                        date: new Date(currentDate),
+                        day: dayCount,
+                        details: `Order ${order.orderNumber} - Final Payment (50%) on Delivery - ${endingCycle.unitsProduced}`,
+                        head: 'Sales - Final Payment',
+                        outflow: 0,
+                        inflow: totalFinal,
+                        balance: balance
+                    });
+                }
             }
-        }        
+        }      
        
         // Check for month start (labour and fixed costs for previous month)
         if (dayOfMonth === 1 && dayCount > 1) {
@@ -396,6 +457,30 @@ function calculateCashFlows(inputs, partnerInvestment) {
         const lastYear = lastDate.getFullYear();
         const lastMonthKey = `${lastYear}-${lastMonth}`;
         const unitsInDecember = monthlyProduction[lastMonthKey] || 0;
+
+        // Settle any remaining pending payments that are due AFTER Dec 31
+        if (pendingPayments.length > 0) {
+            const futurePayments = pendingPayments.filter(payment => {
+                const paymentDate = new Date(payment.date);
+                return paymentDate > currentDate; // Only payments due after Dec 31
+            });
+            
+            futurePayments.forEach(payment => {
+                balance += payment.amount;
+                transactions.push({
+                    date: new Date(currentDate),
+                    day: dayCount,
+                    details: payment.details + ' (Year-end Settlement)',
+                    head: payment.head,
+                    outflow: 0,
+                    inflow: payment.amount,
+                    balance: balance
+                });
+            });
+            
+            // Clear only the future payments we processed
+            pendingPayments = pendingPayments.filter(p => !futurePayments.includes(p));
+        }
         
         // December labour cost
         if (unitsInDecember > 0) {
@@ -425,7 +510,24 @@ function calculateCashFlows(inputs, partnerInvestment) {
             balance: balance
         });
     }
-    }
+    } // This is the closing brace of the for loop
+    
+    // Sort transactions to ensure inflows come before outflows on the same date
+    transactions.sort((a, b) => {
+        // First sort by date
+        const dateCompare = new Date(a.date) - new Date(b.date);
+        if (dateCompare !== 0) return dateCompare;
+        
+        // If same date, inflows come first (inflow > 0 comes before inflow = 0)
+        return b.inflow - a.inflow;
+    });
+    
+    // Recalculate all balances after sorting
+    let recalcBalance = inputs.initialBalance;
+    transactions.forEach(transaction => {
+        recalcBalance += transaction.inflow - transaction.outflow;
+        transaction.balance = recalcBalance;
+    });
     
     return transactions;
 }
@@ -552,7 +654,8 @@ function collectInputValues() {
         applyGST: document.getElementById('apply-gst').checked,
         gstRate: parseFloat(document.getElementById('gst-rate').value) || 0,
         applyDelay: document.getElementById('apply-delay').checked,
-        delayDays: parseInt(document.getElementById('delay-days').value) || 0
+        advanceDelayDays: parseInt(document.getElementById('advance-delay-days').value) || 0,
+        finalDelayDays: parseInt(document.getElementById('final-delay-days').value) || 0
     };
 }
 

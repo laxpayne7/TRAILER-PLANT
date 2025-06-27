@@ -367,6 +367,20 @@ body {
     font-size: 14px;
 }
 
+.delay-inputs {
+    display: flex;
+    gap: 16px;
+}
+
+.delay-field {
+    flex: 1;
+}
+
+.delay-field input {
+    width: 100%;
+    max-width: 120px;
+}
+
 /* Control Buttons */
 .control-buttons {
     display: flex;
