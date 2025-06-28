@@ -19,7 +19,7 @@ async function loadComponent(componentPath, targetId) {
 }
 
 // Tab switching functionality
-function showTab(tabName) {
+function showTab(tabName, evt) {
     // Hide all tabs
     const allTabs = document.querySelectorAll('.tab-content');
     allTabs.forEach(tab => tab.classList.remove('active'));
@@ -35,7 +35,7 @@ function showTab(tabName) {
     }
     
     // Add active class to clicked button
-    const clickedButton = event.target;
+    const clickedButton = evt.target;
     clickedButton.classList.add('active');
 }
 
@@ -1574,7 +1574,8 @@ function calculateOrders(inputs, cycles) {
         orders.push({
             orderNumber: orderNumber,
             orderDay: orderDay,
-            deliveryDay: orderNumber === 1 ? orderDay : orderDay, // Orders align with cycle completion
+            // Delivery occurs when the production cycle finishes
+            deliveryDay: cycle ? cycle.endDay : orderDay,
             paymentType: orderNumber === 1 ? 'full' : 'split',
             quantity: quantity,
             cycleNumber: cycleIndex

@@ -19,7 +19,7 @@ async function loadComponent(componentPath, targetId) {
 }
 
 // Tab switching functionality
-function showTab(tabName) {
+function showTab(tabName, evt) {
     // Hide all tabs
     const allTabs = document.querySelectorAll('.tab-content');
     allTabs.forEach(tab => tab.classList.remove('active'));
@@ -35,7 +35,7 @@ function showTab(tabName) {
     }
     
     // Add active class to clicked button
-    const clickedButton = event.target;
+    const clickedButton = evt.target;
     clickedButton.classList.add('active');
 }
 
@@ -1023,7 +1023,25 @@ function calculatePnLData(period) {
             filteredData.netMarginPercent = (filteredData.netProfit / filteredData.revenue.net) * 100 || 0;
         }
         
+        // Save P&L data to jvStore
+        if (window.jvStore) {
+            jvStore.set('pnlData.netProfit', filteredData.netProfit);
+            jvStore.set('pnlData.unitsSold', filteredData.revenue.unitsSold);
+            jvStore.set('pnlData.grossMargin', filteredData.grossMarginPercent);
+            jvStore.set('pnlData.netMargin', filteredData.netMarginPercent);
+            console.log('P&L data saved to jvStore');
+        }
+        
         return filteredData;
+    }
+    
+    // Save P&L data to jvStore (for full quarter)
+    if (window.jvStore) {
+        jvStore.set('pnlData.netProfit', pnlData.netProfit);
+        jvStore.set('pnlData.unitsSold', pnlData.revenue.unitsSold);
+        jvStore.set('pnlData.grossMargin', pnlData.grossMarginPercent);
+        jvStore.set('pnlData.netMargin', pnlData.netMarginPercent);
+        console.log('P&L data saved to jvStore');
     }
     
     return pnlData;
@@ -1491,6 +1509,20 @@ function simulateCashFlow() {
     
     // Calculate summary data
     calculateSummary();
+    
+    // Save to jvStore for other sections to use
+    if (window.jvStore) {
+        jvStore.set('partnerBInvestment', summaryData.partnerInvestment);
+        jvStore.set('totalCashInflow', summaryData.totalInflow);
+        jvStore.set('totalCashOutflow', summaryData.totalOutflow);
+        jvStore.set('finalBalance', summaryData.finalBalance);
+        jvStore.set('minBalance', summaryData.minBalance);
+        
+        // Also update Partner BC's working capital contribution
+        jvStore.set('contributions.partnerBC.workingCapital', summaryData.partnerInvestment);
+        
+        console.log('Cash flow data saved to jvStore');
+    }
     
     // Update UI
     updateSummaryCards();

@@ -60,17 +60,267 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("JV Setup Details Saved ✅");
     });
   }
-    // === Section 3: B:C Slider Logic ===
-    const bcSlider = document.getElementById("bc-split");
-    const bDisplay = document.getElementById("split-b");
-    const cDisplay = document.getElementById("split-c");
-
-    if (bcSlider && bDisplay && cDisplay) {
-    bcSlider.addEventListener("input", () => {
-        const bPercent = parseInt(bcSlider.value);
-        const cPercent = 100 - bPercent;
-        bDisplay.textContent = `${bPercent}%`;
-        cDisplay.textContent = `${cPercent}%`;
-    });
+    
+  // === Section 3: Connect to jvStore ===
+  // Auto-update Partner BC's working capital when simulator runs
+  function updateContributionTable() {
+    const partnerBInvestment = jvStore.get('partnerBInvestment');
+    const wcInput = document.getElementById('wc-bc');
+    
+    if (wcInput && partnerBInvestment > 0) {
+      wcInput.value = partnerBInvestment;
+      console.log('Updated Partner BC Working Capital:', partnerBInvestment);
+      
+      // Manually trigger the input event to update jvStore
+      const event = new Event('input', { bubbles: true });
+      wcInput.dispatchEvent(event);
     }
+  }
+  
+  // Calculate and display equity percentages
+  function updateEquityDisplay() {
+    const equity = jvStore.calculateEquity();
+    const contributions = jvStore.calculateTotalContributions();
+    
+    console.log('Equity Split:', equity);
+    
+    // Update equity percentage displays
+    const equityA = document.getElementById('equity-a');
+    const equityBC = document.getElementById('equity-bc');
+    const contribA = document.getElementById('contrib-a');
+    const contribBC = document.getElementById('contrib-bc');
+    const totalContrib = document.getElementById('total-contributions');
+    
+    if (equityA) equityA.textContent = equity.partnerA + '%';
+    if (equityBC) equityBC.textContent = equity.partnerBC + '%';
+    
+    if (contribA) contribA.textContent = contributions.partnerA.toLocaleString('en-IN');
+    if (contribBC) contribBC.textContent = contributions.partnerBC.toLocaleString('en-IN');
+    
+    if (totalContrib) {
+      totalContrib.textContent = contributions.total.toLocaleString('en-IN');
+    }
+    
+    // Update horizontal bar visual
+    const barA = document.getElementById('bar-a');
+    const barBC = document.getElementById('bar-bc');
+    const barALabel = document.getElementById('bar-a-label');
+    const barBCLabel = document.getElementById('bar-bc-label');
+    
+    if (barA && barBC) {
+      barA.style.width = equity.partnerA + '%';
+      barBC.style.left = equity.partnerA + '%';
+      barBC.style.width = equity.partnerBC + '%';
+      
+      // Show/hide labels based on bar width
+      if (barALabel) {
+        barALabel.textContent = equity.partnerA + '%';
+        barALabel.style.display = parseFloat(equity.partnerA) > 10 ? 'block' : 'none';
+      }
+      if (barBCLabel) {
+        barBCLabel.textContent = equity.partnerBC + '%';
+        barBCLabel.style.display = parseFloat(equity.partnerBC) > 10 ? 'block' : 'none';
+      }
+    }
+    
+    // Generate ruler scale
+    generateRulerScale(contributions.total);
+    
+    // Calculate profit distributions
+    calculateProfitDistributions(equity);
+  }
+  
+  // Generate dynamic ruler scale based on total contributions
+  function generateRulerScale(total) {
+    const rulerMarks = document.getElementById('ruler-marks');
+    if (!rulerMarks) return;
+    
+    rulerMarks.innerHTML = '';
+    
+    // Determine scale intervals
+    let interval, decimals;
+    if (total <= 1000000) { // Up to 10L
+      interval = 200000; // 2L intervals
+      decimals = 0;
+    } else if (total <= 10000000) { // Up to 1Cr
+      interval = 1000000; // 10L intervals
+      decimals = 0;
+    } else if (total <= 100000000) { // Up to 10Cr
+      interval = 10000000; // 1Cr intervals
+      decimals = 1;
+    } else {
+      interval = 50000000; // 5Cr intervals
+      decimals = 1;
+    }
+    
+    // Generate marks
+    for (let value = 0; value <= total; value += interval) {
+      const percent = (value / total) * 100;
+      const mark = document.createElement('div');
+      mark.style.cssText = `
+        position: absolute;
+        left: ${percent}%;
+        bottom: 0;
+        transform: translateX(-50%);
+      `;
+      
+      // Tick mark
+      const tick = document.createElement('div');
+      tick.style.cssText = `
+        width: 1px;
+        height: 8px;
+        background: var(--text-muted);
+        margin: 0 auto;
+      `;
+      mark.appendChild(tick);
+      
+      // Label
+      const label = document.createElement('div');
+      label.style.cssText = `
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+        white-space: nowrap;
+      `;
+      
+      // Format label
+      if (value === 0) {
+        label.textContent = '0';
+      } else if (value >= 10000000) {
+        label.textContent = (value / 10000000).toFixed(decimals) + ' Cr';
+      } else {
+        label.textContent = (value / 100000).toFixed(0) + ' L';
+      }
+      
+      mark.appendChild(label);
+      rulerMarks.appendChild(mark);
+    }
+  }
+  
+  // Calculate profit distributions based on equity
+  function calculateProfitDistributions(equity) {
+    // Get net profit from P&L (stored in jvStore)
+    let quarterlyNetProfit = jvStore.get('pnlData.netProfit') || 0;
+    
+    // If no P&L data yet, use default assumption
+    if (quarterlyNetProfit === 0) {
+      // Default: 78 units at approx 61k profit per unit = 48L quarterly
+      quarterlyNetProfit = 4800000;
+    }
+    
+    // Calculate distributions
+    const distributions = {
+      monthly: quarterlyNetProfit / 3,      // Quarterly divided by 3
+      quarterly: quarterlyNetProfit,         // Direct from P&L
+      annual: quarterlyNetProfit * 4        // Quarterly multiplied by 4
+    };
+    
+    // Update Partner A values
+    const monthlyA = document.getElementById('monthly-a');
+    const quarterlyA = document.getElementById('quarterly-a');
+    const annualA = document.getElementById('annual-a');
+    
+    if (monthlyA) monthlyA.textContent = Math.round(distributions.monthly * equity.partnerA / 100).toLocaleString('en-IN');
+    if (quarterlyA) quarterlyA.textContent = Math.round(distributions.quarterly * equity.partnerA / 100).toLocaleString('en-IN');
+    if (annualA) annualA.textContent = Math.round(distributions.annual * equity.partnerA / 100).toLocaleString('en-IN');
+    
+    // Update Partner BC values
+    const monthlyBC = document.getElementById('monthly-bc');
+    const quarterlyBC = document.getElementById('quarterly-bc');
+    const annualBC = document.getElementById('annual-bc');
+    
+    if (monthlyBC) monthlyBC.textContent = Math.round(distributions.monthly * equity.partnerBC / 100).toLocaleString('en-IN');
+    if (quarterlyBC) quarterlyBC.textContent = Math.round(distributions.quarterly * equity.partnerBC / 100).toLocaleString('en-IN');
+    if (annualBC) annualBC.textContent = Math.round(distributions.annual * equity.partnerBC / 100).toLocaleString('en-IN');
+    
+    // Update quarterly profit display
+    const quarterlyProfitDisplay = document.getElementById('quarterly-net-profit');
+    if (quarterlyProfitDisplay) quarterlyProfitDisplay.textContent = quarterlyNetProfit.toLocaleString('en-IN');
+    
+    // Calculate ROI and Payback Period
+    const contributions = jvStore.calculateTotalContributions();
+    const totalInvestment = contributions.total;
+    const annualProfit = distributions.annual;
+    
+    // Annual ROI = (Annual Profit / Total Investment) * 100
+    const annualROI = totalInvestment > 0 ? (annualProfit / totalInvestment * 100).toFixed(1) : 0;
+    
+    // Payback Period = Total Investment / Annual Profit
+    const paybackPeriod = annualProfit > 0 ? (totalInvestment / annualProfit).toFixed(1) : 0;
+    
+    // Update ROI displays
+    const roiDisplay = document.getElementById('annual-roi');
+    const paybackDisplay = document.getElementById('payback-period');
+    
+    if (roiDisplay) roiDisplay.textContent = annualROI + '%';
+    if (paybackDisplay) paybackDisplay.textContent = paybackPeriod + ' years';
+  }
+  
+  // Initialize default values on page load
+  updateEquityDisplay();
+  
+  // Listen for jvStore changes
+  jvStore.subscribe(function(key, value) {
+    if (key === 'partnerBInvestment') {
+      updateContributionTable();
+    }
+  });
+
+  // === Section 3: B:C Slider Logic ===
+  const bcSlider = document.getElementById("bc-split");
+  const bDisplay = document.getElementById("split-b");
+  const cDisplay = document.getElementById("split-c");
+
+  if (bcSlider && bDisplay && cDisplay) {
+  bcSlider.addEventListener("input", () => {
+      const bPercent = parseInt(bcSlider.value);
+      const cPercent = 100 - bPercent;
+      bDisplay.textContent = `${bPercent}%`;
+      cDisplay.textContent = `${cPercent}%`;
+
+      // Update jvStore with new split values
+      jvStore.set('bcSplit.b', bPercent);
+      jvStore.set('bcSplit.c', cPercent);
+
+      // Trigger equity calculation
+      updateEquityDisplay();
+    });
+  }
+
+  // === Section 3: Track All Contribution Inputs ===
+  // Save contribution values when they change
+  const contributionInputs = {
+      'capex-a': 'contributions.partnerA.capex',
+      'wc-bc': 'contributions.partnerBC.workingCapital',
+      'market-ops-bc': 'contributions.partnerBC.marketOpsValue'
+  };
+  
+  Object.keys(contributionInputs).forEach(inputId => {
+      const input = document.getElementById(inputId);
+      if (input) {
+          input.addEventListener('input', function() {
+              const value = parseFloat(this.value) || 0;
+              jvStore.set(contributionInputs[inputId], value);
+              updateEquityDisplay();
+          });
+      }
+  });
+
+  // === jvStore Test Function ===
+  // This helps us verify data is flowing correctly
+  window.testJVStore = function() {
+    console.log('=== jvStore Test ===');
+    console.log('Current Store Data:', jvStore.getAll());
+    console.log('Partner B Investment:', jvStore.get('partnerBInvestment'));
+    console.log('Total Contributions:', jvStore.calculateTotalContributions());
+    console.log('Equity Split:', jvStore.calculateEquity());
+    console.log('===================');
+  };
+
+  // Subscribe to jvStore changes for debugging
+  jvStore.subscribe(function(key, value) {
+    console.log(`jvStore Update: ${key} changed to ${value}`);
+  });
+
+  console.log('Test function ready. Run testJVStore() in console to see data.');
 });

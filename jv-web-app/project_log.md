@@ -1,5 +1,86 @@
 # JV Web App - Project Log
 
+## 📅 2025-06-29
+
+## 📅 2025-06-29 (Session 2)
+
+### ✅ Section 3 Financial Dashboard Enhanced
+- Transformed equity display into comprehensive financial dashboard
+- Added dynamic ruler/scale showing contribution amounts
+- Implemented profit distribution calculations:
+  - Monthly dividends (quarterly P&L ÷ 3)
+  - Quarterly profits (from actual P&L data)
+  - Annual projections (quarterly × 4)
+- Added ROI and Payback Period calculations
+- Fixed HTML structure issues (Notes/Export showing on all pages)
+
+### ✅ P&L Integration with jvStore
+- Extended jvStore to include P&L data (netProfit, unitsSold, margins)
+- P&L Statement now saves quarterly profit data to jvStore
+- Section 3 reads real P&L data for accurate dividend calculations
+- ROI calculated as: (Annual Profit / Total Investment) × 100
+- Payback Period: Total Investment / Annual Profit
+
+### 📊 Complete Data Flow Established
+1. Working Capital Simulator → calculates BC investment
+2. P&L Statement → calculates quarterly profits
+3. Section 3 Dashboard → combines all data:
+   - Real equity split based on contributions
+   - Actual profit distributions based on P&L
+   - Dynamic ROI and payback calculations
+
+### 🎨 UI Improvements
+- Professional gradient bars for equity visualization
+- Symmetric layout with Partner A (left) vs Partner BC (right)
+- Dynamic ruler scale adjusting to contribution amounts
+- Color-coded financial metrics
+
+### 🔧 Bug Fixes
+- Fixed jvStore structure (removed nested pnlData)
+- Fixed programmatic input updates not triggering events
+- Corrected HTML structure for Section 3 containment
+
+➡️ Next: Fix Section 2 display issues (standalone vs integrated)
+
+---
+
+### ✅ jvStore.js Implemented & Integrated
+- Created centralized state management system (jvStore.js)
+- Simple get/set methods with dot notation support for nested values
+- Event-based subscription system for reactive updates
+- Successfully integrated with Working Capital Simulator (Section 2)
+
+### ✅ Section 3 Refactored for A vs BC Structure
+- Simplified contribution model to reflect actual partnership (A vs BC)
+- Removed internal B:C split from equity calculations
+- Set sensible defaults:
+  - Partner A CapEx: ₹2 Cr
+  - Partner BC Market/Ops Value: ₹50 L
+  - Partner BC Renovation: ₹50 L
+- Working Capital flows automatically from simulator
+
+### ✅ Horizontal Equity Bar Visualization
+- Created intuitive horizontal stacked bar showing A vs BC equity split
+- Real-time updates as contributions change
+- Shows both percentages and absolute contribution values
+- Clean, professional design with color coding
+
+### 🔧 Technical Improvements
+- Fixed programmatic input updates not triggering events
+- Established clear data flow: Simulator → jvStore → UI Updates
+- All sections now reactive to data changes
+
+### 📊 Current Data Flow
+1. Working Capital Simulator calculates BC investment need
+2. Data saved to jvStore automatically
+3. Section 3 reads from jvStore and updates UI
+4. Equity percentages recalculate in real-time
+5. Visual bar chart updates instantly
+
+➡️ Next: Connect remaining sections to jvStore (Governance, Profit Policy, etc.)
+
+---
+
 ## 📅 2025-06-28
 
 ### ✅ Project Context Document Created
