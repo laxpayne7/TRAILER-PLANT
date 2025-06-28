@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JV Partnership Web App</title>
+
+  <!-- Main App Styles -->
+  <link rel="stylesheet" href="styles/main.css" />
+  <link rel="stylesheet" href="modules/calculator/css/style.css" />
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="sidebar">
+      <button id="toggleSidebar">☰</button>
+      <nav>
+        <ul>
+          <li data-section="overview-setup">1. Overview & Setup</li>
+          <li data-section="working-capital-simulator">2. Working Capital Simulator</li>
+          <li data-section="contribution-equity">3. Contribution & Equity</li>
+          <li data-section="roles-responsibilities">4. Roles & Responsibilities</li>
+          <li data-section="profit-reserve-policy">5. Profit & Reserve Policy</li>
+          <li data-section="governance-matrix">6. Governance Matrix</li>
+          <li class="collapsible">Advanced ▼</li>
+          <ul class="submenu">
+            <li data-section="lockin-exit-buyout">7. Lock-in & Exit</li>
+            <li data-section="conflict-resolution">8. Conflict Resolution</li>
+            <li data-section="scenario-simulator">9. Scenario Simulator</li>
+            <li data-section="mou-drafting">10. MoU Drafting Room</li>
+            <li data-section="config-archive">11. Config & Archive</li>
+          </ul>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- Main Content Panel -->
+    <main id="main-content">
+        <section id="overview-setup" class="content-section active">
+        <h2>1. Overview & Setup</h2>
+        <div style="margin-bottom: 1rem;">
+            <p style="font-family: var(--font-heading); font-size: 1.5rem;">Heading Font: The quick brown fox jumps over the lazy dog</p>
+            <p style="font-family: var(--font-body); font-size: 1rem;">Body Font: The quick brown fox jumps over the lazy dog</p>
+        </div>
+        <div class="placeholder">[Startup details go here]</div>
+        </section>
+
+      <section id="working-capital-simulator" class="content-section">
+        <h2>2. Working Capital Simulator</h2>
+        <div id="calculator-tabs"></div>
+        <div id="calculator-views"></div>
+      </section>
+
+      <section id="contribution-equity" class="content-section">
+        <h2>3. Contribution & Equity Builder</h2>
+        <div class="placeholder"></div>
+      </section>
+
+      <section id="roles-responsibilities" class="content-section">
+        <h2>4. Roles & Responsibilities</h2>
+        <div class="placeholder"></div>
+      </section>
+
+      <section id="profit-reserve-policy" class="content-section">
+        <h2>5. Profit & Reserve Policy</h2>
+        <div class="placeholder"></div>
+      </section>
+
+      <section id="governance-matrix" class="content-section">
+        <h2>6. Governance Matrix</h2>
+        <div class="placeholder"></div>
+      </section>
+
+      <section id="lockin-exit-buyout" class="content-section">
+        <h2>7. Lock-in, Exit & Buyout</h2>
+        <div class="placeholder"></div>
+      </section>
+
+      <section id="conflict-resolution" class="content-section">
+        <h2>8. Conflict Resolution</h2>
+        <div class="placeholder"></div>
+      </section>
+
+      <section id="scenario-simulator" class="content-section">
+        <h2>9. Scenario Simulator</h2>
+        <div class="placeholder"></div>
+      </section>
+
+      <section id="mou-drafting" class="content-section">
+        <h2>10. MoU Drafting Room</h2>
+        <div class="placeholder"></div>
+      </section>
+
+      <section id="config-archive" class="content-section">
+        <h2>11. Config & Archive</h2>
+        <div class="placeholder"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Main App Logic -->
+  <script src="scripts/main.js"></script>
+  <script src="modules/calculator/js/script.js"></script>
+  <script>
+    window.addEventListener("DOMContentLoaded", () => {
+      const viewContainer = document.getElementById("calculator-views");
+
+      const loadComponent = async (file) => {
+        const res = await fetch(file);
+        const html = await res.text();
+        const wrapper = document.createElement("div");
+        wrapper.innerHTML = html;
+        viewContainer.appendChild(wrapper);
+      };
+
+      loadComponent("modules/calculator/components/cashflow-form.html");
+      loadComponent("modules/calculator/components/pnl-statement.html");
+      loadComponent("modules/calculator/components/balance-sheet.html");
+    });
+  </script>
+</body>
+</html>

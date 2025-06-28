@@ -1,0 +1,18 @@
+  --font-body: 'Inter', sans-serif;
+  --font-heading: 'Poppins', sans-serif;
+/* === Base Styles === */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Poppins:wght@600&display=swap');
+
+---------------------------------
+
+--font-body: 'DM Sans', sans-serif;
+--font-heading: 'Sora', sans-serif;
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600&family=Sora:wght@600&display=swap');
+
+----------------------------------
+
+--font-body: 'Be Vietnam Pro', sans-serif;
+--font-heading: 'Orbitron', sans-serif;
+
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600&family=Orbitron:wght@600&display=swap');

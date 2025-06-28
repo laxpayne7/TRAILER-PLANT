@@ -1,0 +1,242 @@
+<div class="tab-header">
+    <h2>Cash Flow Simulator</h2>
+    <p>Configure parameters and simulate daily cash flows for your manufacturing operations</p>
+</div>
+
+    <!-- Control Buttons -->
+    <div class="control-buttons">
+        <button class="btn btn-primary" onclick="simulateCashFlow()">
+            <span class="icon-play"></span>
+            Simulate
+        </button>
+        <button class="btn btn-secondary" onclick="exportToExcel()">
+            <span class="icon-download"></span>
+            Export to Excel
+        </button>
+    </div>
+
+<!-- Input Variables Section -->
+<div class="input-section">
+    <h3 class="section-title">Input Variables</h3>
+
+    
+    <!-- Project Setup -->
+    <div class="input-group">
+        <h4 class="group-title">Project Setup</h4>
+        <div class="input-grid">
+            <div class="input-field">
+                <label for="start-date">Project Start Date</label>
+                <input type="date" id="start-date" value="2025-10-01">
+            </div>
+            <div class="input-field">
+                <label for="initial-balance">Initial Balance (₹)</label>
+                <input type="number" id="initial-balance" value="0" min="0">
+            </div>
+        </div>
+    </div>
+
+    <!-- Production Setup -->
+    <div class="input-group">
+        <h4 class="group-title">Production Setup</h4>
+        <div class="input-grid">
+            <div class="input-field">
+                <label for="starting-inventory">Starting Inventory Units</label>
+                <input type="number" id="starting-inventory" value="6" min="0">
+            </div>
+            <div class="input-field">
+                <label for="initial-order-day">Initial Order Reception Day</label>
+                <input type="number" id="initial-order-day" value="8" min="1">
+            </div>
+            <div class="input-field">
+                <label for="order-frequency">Order Frequency (days)</label>
+                <input type="number" id="order-frequency" value="7" min="1">
+            </div>
+            <div class="input-field">
+                <label for="plant-capacity">Plant Capacity (Units/Cycle)</label>
+                <input type="number" id="plant-capacity" value="6" min="1">
+            </div>
+            <div class="input-field">
+                <label for="lead-time">Lead Time per Cycle (days)</label>
+                <input type="number" id="lead-time" value="6" min="1">
+            </div>
+            <div class="input-field">
+                <label for="cycle-frequency">Cycle Frequency (days)</label>
+                <input type="number" id="cycle-frequency" value="7" min="1">
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Quantity Planning -->
+    <div class="input-group">
+        <h4 class="group-title">Order Quantity Planning</h4>
+        <div class="input-grid">
+            <div class="input-field">
+                <label for="order-qty-month1">Order Quantity: October (Cycle 1-4)</label>
+                <input type="number" id="order-qty-month1" value="6" min="1">
+                <span class="field-note">Units per cycle for October</span>
+            </div>
+            <div class="input-field">
+                <label for="order-qty-month2">Order Quantity: November (Cycle 5-8)</label>
+                <input type="number" id="order-qty-month2" value="6" min="1">
+                <span class="field-note">Units per cycle for November</span>
+            </div>
+            <div class="input-field">
+                <label for="order-qty-month3">Order Quantity: December (Cycle 9-13)</label>
+                <input type="number" id="order-qty-month3" value="6" min="1">
+                <span class="field-note">Units per cycle for December</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Operations -->
+    <div class="input-group">
+        <h4 class="group-title">Operations</h4>
+        <div class="input-grid">
+            <div class="input-field">
+                <label for="working-days">Monthly Working Days</label>
+                <input type="number" id="working-days" value="24" min="1" max="31">
+            </div>
+            <div class="input-field">
+                <label for="shift-operations">Shift Operations</label>
+                <select id="shift-operations">
+                    <option value="1">1 Shift (12 hours)</option>
+                    <option value="2">2 Shifts (24 hours)</option>
+                </select>
+            </div>
+            <div class="input-field">
+                <label for="current-target">Monthly Target (Current)</label>
+                <input type="number" id="current-target" value="24" min="1">
+            </div>
+            <div class="input-field">
+                <label for="growth-target">Monthly Target (After 3 months)</label>
+                <input type="number" id="growth-target" value="40" min="1">
+            </div>
+        </div>
+    </div>
+
+    <!-- Costs -->
+    <div class="input-group">
+        <h4 class="group-title">Cost Structure</h4>
+        <div class="input-grid">
+            <div class="input-field">
+                <label for="steel-cost">Steel Materials per Unit (₹)</label>
+                <input type="number" id="steel-cost" value="350000" min="0">
+            </div>
+            <div class="input-field">
+                <label for="bought-out-cost">Bought-out Materials per Unit (₹)</label>
+                <input type="number" id="bought-out-cost" value="900000" min="0">
+            </div>
+            <div class="input-field">
+                <label for="labour-cost">Labour Cost per Unit (₹)</label>
+                <input type="number" id="labour-cost" value="50000" min="0">
+            </div>
+            <div class="input-field">
+                <label for="fixed-costs">Fixed Monthly Costs (₹)</label>
+                <input type="number" id="fixed-costs" value="1000000" min="0">
+            </div>
+        </div>
+    </div>
+
+    <!-- Revenue & Payment -->
+    <div class="input-group">
+        <h4 class="group-title">Revenue & Payment Terms</h4>
+        <div class="input-grid">
+            <div class="input-field">
+                <label for="cash-in-per-unit">Cash In Per Unit (₹)</label>
+                <input type="number" id="cash-in-per-unit" value="1400000" min="0">
+            </div>
+            <div class="input-field">
+                <label for="material-purchase-day">Material Purchase Day</label>
+                <input type="number" id="material-purchase-day" value="1" min="1">
+                <span class="field-note">Day 1 for Cycle 1, Day 6 of previous cycle thereafter</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Optional Logic Switches -->
+    <div class="input-group">
+        <h4 class="group-title">Optional Settings</h4>
+        <div class="switch-container">
+            <div class="switch-item">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="apply-gst">
+                    <span class="toggle-slider"></span>
+                </label>
+                <div class="switch-label">
+                    <span>Apply GST Implications</span>
+                    <div class="gst-rate-container" style="display: none;">
+                        <label for="gst-rate">GST Rate (%)</label>
+                        <input type="number" id="gst-rate" value="28" min="0" max="100">
+                    </div>
+                </div>
+            </div>
+            <div class="switch-item">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="apply-delay">
+                    <span class="toggle-slider"></span>
+                </label>
+                <div class="switch-label">
+                    <span>Apply Delayed Payment Logic</span>
+                    <div class="delay-days-container" style="display: none;">
+                        <div class="delay-inputs">
+                            <div class="delay-field">
+                                <label for="advance-delay-days">Advance Payment Delay (working days)</label>
+                                <input type="number" id="advance-delay-days" value="2" min="0">
+                            </div>
+                            <div class="delay-field">
+                                <label for="final-delay-days">Final Payment Delay (working days)</label>
+                                <input type="number" id="final-delay-days" value="5" min="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</div>
+
+<!-- Summary Cards -->
+<div class="summary-section" style="display: none;">
+    <h3 class="section-title">Summary</h3>
+    <div class="summary-cards">
+        <div class="summary-card">
+            <div class="card-label">Partner B Investment</div>
+            <div class="card-value positive" id="partner-investment">₹0</div>
+        </div>        
+        <div class="summary-card">
+            <div class="card-label">Total Cash Inflow</div>
+            <div class="card-value positive" id="total-inflow">₹0</div>
+        </div>
+        <div class="summary-card">
+            <div class="card-label">Total Cash Outflow</div>
+            <div class="card-value negative" id="total-outflow">₹0</div>
+        </div>
+        <div class="summary-card">
+            <div class="card-label">Final Balance</div>
+            <div class="card-value" id="final-balance">₹0</div>
+        </div>
+        <div class="summary-card">
+            <div class="card-label">Minimum Balance</div>
+            <div class="card-value" id="min-balance">₹0</div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Cash Flow Table (placeholder for now) -->
+<div class="table-section" style="display: none;">
+    <h3 class="section-title">Cash Flow Details</h3>
+    <div class="table-container">
+        <!-- Table will be dynamically generated here -->
+    </div>
+</div>
+
+<!-- Cash Flow Graph (placeholder for now) -->
+<div class="graph-section" style="display: none;">
+    <h3 class="section-title">Cash Flow Visualization</h3>
+    <div class="graph-container">
+        <canvas id="cashFlowChart"></canvas>
+    </div>
+</div>

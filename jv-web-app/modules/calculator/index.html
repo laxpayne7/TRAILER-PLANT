@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Working Capital Calculator</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <div class="header">
+            <h1>Working Capital Calculator</h1>
+            <p>Advanced financial modeling for manufacturing operations</p>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-button active" onclick="showTab('cashflow')">Cash Flow Simulator</button>
+            <button class="tab-button" onclick="showTab('pnl')">Profit & Loss Statement</button>
+            <button class="tab-button" onclick="showTab('balance')">Balance Sheet</button>
+        </div>
+
+        <!-- Tab Contents -->
+        <!-- Cash Flow Simulator Tab -->
+        <div id="cashflow-tab" class="tab-content active">
+            <!-- Content will be loaded from cashflow-form.html -->
+        </div>
+
+        <!-- Profit & Loss Statement Tab -->
+        <div id="pnl-tab" class="tab-content">
+            <!-- Content will be loaded from pnl-statement.html -->
+        </div>
+
+        <!-- Balance Sheet Tab -->
+        <div id="balance-tab" class="tab-content">
+            <!-- Content will be loaded from balance-sheet.html -->
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/script.js"></script>
+    <script>
+        // Load components
+        loadComponent('components/cashflow-form.html', 'cashflow-tab');
+        loadComponent('components/pnl-statement.html', 'pnl-tab');
+        loadComponent('components/balance-sheet.html', 'balance-tab');
+    </script>
+</body>
+</html>

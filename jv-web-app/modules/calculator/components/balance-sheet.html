@@ -1,0 +1,60 @@
+<div class="tab-header">
+    <h2>Balance Sheet</h2>
+    <p>Financial position snapshot as of January 1st, 2026</p>
+</div>
+
+<!-- Features Section -->
+<div class="bs-features">
+    <div class="bs-date">
+        <span class="date-label">As of:</span>
+        <span class="date-value">January 1, 2026</span>
+    </div>
+    <div class="bs-actions">
+        <button class="btn btn-secondary" onclick="refreshBalanceSheet()">
+            <span class="icon-refresh"></span>
+            Refresh
+        </button>
+        <button class="btn btn-secondary" onclick="exportBalanceSheetPDF()">
+            <span class="icon-pdf"></span>
+            Export PDF
+        </button>
+        <button class="btn btn-secondary" onclick="exportBalanceSheetExcel()">
+            <span class="icon-excel"></span>
+            Export Excel
+        </button>
+    </div>
+</div>
+
+<!-- Balance Sheet Content -->
+<div class="bs-content">
+    <!-- Main Balance Sheet -->
+    <div class="bs-statement">
+        <div class="balance-sheet-container">
+            <!-- Balance sheet will be dynamically generated here -->
+        </div>
+    </div>
+    
+    <!-- Key Metrics -->
+    <div class="bs-metrics">
+        <div class="metric-card">
+            <h4>Working Capital</h4>
+            <div class="metric-value" id="working-capital">₹0</div>
+        </div>
+        <div class="metric-card">
+            <h4>Current Ratio</h4>
+            <div class="metric-value" id="current-ratio">0.0</div>
+        </div>
+        <div class="metric-card">
+            <h4>Cash Position</h4>
+            <div class="metric-value" id="cash-position">₹0</div>
+        </div>
+    </div>
+</div>
+
+<!-- Insights Section -->
+<div class="bs-insights">
+    <h3 class="insights-title">Balance Sheet Analysis</h3>
+    <div class="bs-insights-container">
+        <!-- Insights will be dynamically generated here -->
+    </div>
+</div>

@@ -1,0 +1,65 @@
+<div class="tab-header">
+    <h2>Profit & Loss Statement</h2>
+    <p>Comprehensive P&L analysis based on simulated cash flows</p>
+</div>
+
+<!-- Features Section -->
+<div class="pnl-features">
+    <div class="period-selector">
+        <label for="pnl-period">Period:</label>
+        <select id="pnl-period">
+            <option value="oct-dec">Oct-Dec 2025 (Q4)</option>
+            <option value="oct">October 2025</option>
+            <option value="nov">November 2025</option>
+            <option value="dec">December 2025</option>
+        </select>
+    </div>
+    <div class="pnl-actions">
+        <button class="btn btn-secondary" onclick="refreshPnL()">
+            <span class="icon-refresh"></span>
+            Refresh
+        </button>
+        <button class="btn btn-secondary" onclick="exportPnLPDF()">
+            <span class="icon-pdf"></span>
+            Export PDF
+        </button>
+        <button class="btn btn-secondary" onclick="exportPnLExcel()">
+            <span class="icon-excel"></span>
+            Export Excel
+        </button>
+    </div>
+</div>
+
+<!-- Main Content Area -->
+<div class="pnl-content">
+    <!-- P&L Statement Section -->
+    <div class="pnl-statement">
+        <div class="statement-container">
+            <!-- P&L table will be dynamically generated here -->
+        </div>
+    </div>
+    
+    <!-- Charts Section -->
+    <div class="pnl-charts">
+        <div class="chart-box">
+            <h4>Cost Breakdown</h4>
+            <canvas id="costBreakdownChart"></canvas>
+        </div>
+        <div class="chart-box">
+            <h4>Monthly Revenue Trend</h4>
+            <canvas id="revenueTrendChart"></canvas>
+        </div>
+        <div class="chart-box">
+            <h4>Profit Margin Trend</h4>
+            <canvas id="marginTrendChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Insights Section -->
+<div class="pnl-insights">
+    <h3 class="insights-title">Key Insights</h3>
+    <div class="insights-container">
+        <!-- Insights will be dynamically generated here -->
+    </div>
+</div>
