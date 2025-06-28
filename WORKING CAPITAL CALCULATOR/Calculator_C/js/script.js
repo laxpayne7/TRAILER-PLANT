@@ -130,7 +130,127 @@ function exportBalanceSheetPDF() {
 
 function exportBalanceSheetExcel() {
     console.log('Exporting Balance Sheet to Excel...');
-    alert('Excel export will be implemented in a future update');
+    
+    if (cashFlowData.length === 0) {
+        alert('Please generate the Balance Sheet first');
+        return;
+    }
+    
+    const bsData = calculateBalanceSheetData();
+    
+    // Create a new workbook
+    const wb = XLSX.utils.book_new();
+    
+    // 1. Balance Sheet
+    const balanceSheetData = [
+        ['BALANCE SHEET'],
+        ['As of ' + bsData.date],
+        [''],
+        ['ASSETS'],
+        ['Current Assets'],
+        ['  Cash and Cash Equivalents', '', bsData.assets.current.cash],
+        ['  Accounts Receivable', '', bsData.assets.current.accountsReceivable],
+        ['  GST Input Credit', '', bsData.assets.current.gstInputCredit],
+        ['Total Current Assets', '', bsData.assets.current.totalCurrent],
+        [''],
+        ['TOTAL ASSETS', '', bsData.assets.totalAssets],
+        [''],
+        ['LIABILITIES'],
+        ['Current Liabilities'],
+        ['  Accounts Payable', '', bsData.liabilities.current.accountsPayable],
+        ['  GST Payable', '', bsData.liabilities.current.gstPayable],
+        ['Total Current Liabilities', '', bsData.liabilities.current.totalCurrent],
+        [''],
+        ['TOTAL LIABILITIES', '', bsData.liabilities.totalLiabilities],
+        [''],
+        ['EQUITY'],
+        ['Partner B Investment', '', bsData.equity.partnerBInvestment],
+        ['Retained Earnings', '', bsData.equity.retainedEarnings],
+        [''],
+        ['TOTAL EQUITY', '', bsData.equity.totalEquity],
+        [''],
+        ['TOTAL LIABILITIES & EQUITY', '', bsData.totalLiabilitiesAndEquity]
+    ];
+    
+    const bsWS = XLSX.utils.aoa_to_sheet(balanceSheetData);
+    bsWS['!cols'] = [{wch: 30}, {wch: 10}, {wch: 20}];
+    
+    // Format numbers
+    for (let i = 3; i < balanceSheetData.length; i++) {
+        if (typeof balanceSheetData[i][2] === 'number') {
+            const cellAddress = XLSX.utils.encode_cell({r: i, c: 2});
+            if (!bsWS[cellAddress]) continue;
+            bsWS[cellAddress].z = '#,##0';
+        }
+    }
+    
+    XLSX.utils.book_append_sheet(wb, bsWS, "Balance Sheet");
+    
+    // 2. Financial Ratios Sheet
+    const workingCapital = bsData.assets.current.totalCurrent - bsData.liabilities.current.totalCurrent;
+    const currentRatio = bsData.liabilities.current.totalCurrent > 0 
+        ? (bsData.assets.current.totalCurrent / bsData.liabilities.current.totalCurrent).toFixed(2)
+        : 'N/A';
+    const debtToEquity = bsData.equity.totalEquity > 0 
+        ? (bsData.liabilities.totalLiabilities / bsData.equity.totalEquity).toFixed(2)
+        : '0.00';
+    
+    const ratiosData = [
+        ['Financial Ratios & Metrics'],
+        [''],
+        ['Metric', 'Value', 'Interpretation'],
+        ['Working Capital', workingCapital, workingCapital > 0 ? 'Positive - Good liquidity' : 'Negative - Liquidity concern'],
+        ['Current Ratio', currentRatio, currentRatio >= 1.5 ? 'Strong' : currentRatio >= 1 ? 'Adequate' : 'Weak'],
+        ['Debt to Equity Ratio', debtToEquity, debtToEquity < 0.5 ? 'Low leverage' : 'Moderate leverage'],
+        [''],
+        ['Asset Composition'],
+        ['Cash %', ((bsData.assets.current.cash / bsData.assets.totalAssets) * 100).toFixed(1) + '%'],
+        ['Receivables %', ((bsData.assets.current.accountsReceivable / bsData.assets.totalAssets) * 100).toFixed(1) + '%'],
+        [''],
+        ['Funding Sources'],
+        ['Partner B Investment %', ((bsData.equity.partnerBInvestment / bsData.totalLiabilitiesAndEquity) * 100).toFixed(1) + '%'],
+        ['Retained Earnings %', ((bsData.equity.retainedEarnings / bsData.totalLiabilitiesAndEquity) * 100).toFixed(1) + '%'],
+        ['External Liabilities %', ((bsData.liabilities.totalLiabilities / bsData.totalLiabilitiesAndEquity) * 100).toFixed(1) + '%']
+    ];
+    
+    const ratiosWS = XLSX.utils.aoa_to_sheet(ratiosData);
+    ratiosWS['!cols'] = [{wch: 25}, {wch: 20}, {wch: 30}];
+    XLSX.utils.book_append_sheet(wb, ratiosWS, "Financial Ratios");
+    
+    // 3. Working Capital Analysis
+    const wcData = [
+        ['Working Capital Analysis'],
+        [''],
+        ['Components', 'Amount'],
+        ['Current Assets'],
+        ['  Cash', bsData.assets.current.cash],
+        ['  Receivables', bsData.assets.current.accountsReceivable],
+        ['  GST Credit', bsData.assets.current.gstInputCredit],
+        ['Total Current Assets', bsData.assets.current.totalCurrent],
+        [''],
+        ['Current Liabilities'],
+        ['  Payables', bsData.liabilities.current.accountsPayable],
+        ['  GST Payable', bsData.liabilities.current.gstPayable],
+        ['Total Current Liabilities', bsData.liabilities.current.totalCurrent],
+        [''],
+        ['Net Working Capital', workingCapital],
+        [''],
+        ['Working Capital Requirement Analysis'],
+        ['Partner B Investment', bsData.equity.partnerBInvestment],
+        ['Working Capital as % of Investment', ((workingCapital / bsData.equity.partnerBInvestment) * 100).toFixed(1) + '%']
+    ];
+    
+    const wcWS = XLSX.utils.aoa_to_sheet(wcData);
+    wcWS['!cols'] = [{wch: 35}, {wch: 20}];
+    XLSX.utils.book_append_sheet(wb, wcWS, "Working Capital");
+    
+    // Generate filename
+    const filename = `Balance_Sheet_${bsData.date.replace(/\s/g, '_').replace(/,/g, '')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    
+    // Write the file
+    XLSX.writeFile(wb, filename);
+    
+    console.log('Balance Sheet Excel export completed');
 }
 
 // Generate Balance Sheet from cash flow data
@@ -608,7 +728,104 @@ function exportPnLPDF() {
 
 function exportPnLExcel() {
     console.log('Exporting P&L to Excel...');
-    alert('Excel export will be implemented in a future update');
+    
+    if (cashFlowData.length === 0) {
+        alert('Please generate the P&L statement first');
+        return;
+    }
+    
+    // Get current period
+    const period = document.getElementById('pnl-period').value;
+    const pnlData = calculatePnLData(period);
+    
+    // Create a new workbook
+    const wb = XLSX.utils.book_new();
+    
+    // 1. P&L Statement Sheet
+    const pnlStatementData = [
+        ['PROFIT & LOSS STATEMENT'],
+        ['Period:', getPeriodLabel(period)],
+        [''],
+        ['REVENUE'],
+        ['Sales Revenue (' + pnlData.revenue.unitsSold + ' units)', '', pnlData.revenue.gross],
+        ['Net Revenue', '', pnlData.revenue.net],
+        [''],
+        ['COST OF GOODS SOLD'],
+        ['Material Costs'],
+        ['  Steel Materials', '', pnlData.cogs.materials.steel],
+        ['  Bought-out Materials', '', pnlData.cogs.materials.boughtOut],
+        ['Total Material Costs', '', pnlData.cogs.materials.total],
+        ['Direct Labour', '', pnlData.cogs.labour],
+        ['Total COGS', '', pnlData.cogs.total],
+        [''],
+        ['GROSS PROFIT', '', pnlData.grossProfit],
+        ['Gross Margin %', '', pnlData.grossMarginPercent.toFixed(1) + '%'],
+        [''],
+        ['OPERATING EXPENSES'],
+        ['Fixed Monthly Costs', '', pnlData.operatingExpenses.fixed],
+        ['Total Operating Expenses', '', pnlData.operatingExpenses.fixed],
+        [''],
+        ['NET PROFIT BEFORE TAX', '', pnlData.netProfit],
+        ['Net Margin %', '', pnlData.netMarginPercent.toFixed(1) + '%']
+    ];
+    
+    const pnlWS = XLSX.utils.aoa_to_sheet(pnlStatementData);
+    pnlWS['!cols'] = [{wch: 30}, {wch: 10}, {wch: 20}];
+    
+    // Format numbers
+    for (let i = 4; i < pnlStatementData.length; i++) {
+        if (typeof pnlStatementData[i][2] === 'number') {
+            const cellAddress = XLSX.utils.encode_cell({r: i, c: 2});
+            if (!pnlWS[cellAddress]) continue;
+            pnlWS[cellAddress].z = '#,##0';
+        }
+    }
+    
+    XLSX.utils.book_append_sheet(wb, pnlWS, "P&L Statement");
+    
+    // 2. Monthly Breakdown Sheet
+    const monthlyData = [
+        ['Monthly Revenue Breakdown'],
+        [''],
+        ['Month', 'Units Sold', 'Revenue'],
+        ['October', pnlData.revenue.monthlyBreakdown.october.units, pnlData.revenue.monthlyBreakdown.october.amount],
+        ['November', pnlData.revenue.monthlyBreakdown.november.units, pnlData.revenue.monthlyBreakdown.november.amount],
+        ['December', pnlData.revenue.monthlyBreakdown.december.units, pnlData.revenue.monthlyBreakdown.december.amount],
+        [''],
+        ['Total', pnlData.revenue.unitsSold, pnlData.revenue.gross]
+    ];
+    
+    const monthlyWS = XLSX.utils.aoa_to_sheet(monthlyData);
+    monthlyWS['!cols'] = [{wch: 15}, {wch: 15}, {wch: 20}];
+    XLSX.utils.book_append_sheet(wb, monthlyWS, "Monthly Breakdown");
+    
+    // 3. Key Metrics Sheet
+    const metricsData = [
+        ['Key Financial Metrics'],
+        [''],
+        ['Metric', 'Value'],
+        ['Revenue per Unit', pnlData.revenue.gross / pnlData.revenue.unitsSold],
+        ['Material Cost per Unit', pnlData.cogs.materials.total / pnlData.revenue.unitsSold],
+        ['Labour Cost per Unit', pnlData.cogs.labour / pnlData.revenue.unitsSold],
+        ['Total COGS per Unit', pnlData.cogs.total / pnlData.revenue.unitsSold],
+        ['Gross Profit per Unit', pnlData.grossProfit / pnlData.revenue.unitsSold],
+        [''],
+        ['Gross Margin %', pnlData.grossMarginPercent.toFixed(2) + '%'],
+        ['Net Margin %', pnlData.netMarginPercent.toFixed(2) + '%'],
+        ['Operating Expense Ratio', ((pnlData.operatingExpenses.fixed / pnlData.revenue.net) * 100).toFixed(2) + '%']
+    ];
+    
+    const metricsWS = XLSX.utils.aoa_to_sheet(metricsData);
+    metricsWS['!cols'] = [{wch: 25}, {wch: 20}];
+    XLSX.utils.book_append_sheet(wb, metricsWS, "Key Metrics");
+    
+    // Generate filename
+    const filename = `PnL_Statement_${getPeriodLabel(period).replace(/\s/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    
+    // Write the file
+    XLSX.writeFile(wb, filename);
+    
+    console.log('P&L Excel export completed');
 }
 
 // Generate P&L Statement from cash flow data
@@ -1818,8 +2035,112 @@ function collectInputValues() {
 // Export to Excel function
 function exportToExcel() {
     console.log('Exporting to Excel...');
-    // This will be implemented in Phase 4
-    alert('Export functionality will be implemented in Phase 4');
+
+    // Debug: Check if XLSX is available
+    if (typeof XLSX === 'undefined') {
+        alert('Excel export library not loaded. Please refresh the page and try again.');
+        console.error('XLSX is not defined');
+        return;
+    }
+    
+    if (cashFlowData.length === 0) {
+        alert('Please run the simulation first');
+        return;
+    }
+    
+    try{
+        // Create a new workbook
+        const wb = XLSX.utils.book_new();
+        console.log('Workbook created:', wb);    
+        
+        // 1. Summary Sheet
+        const summarySheetData = [
+            ['Working Capital Calculator - Summary'],
+            ['Generated on:', new Date().toLocaleDateString()],
+            [''],
+            ['Key Metrics'],
+            ['Partner B Investment:', summaryData.partnerInvestment],
+            ['Total Cash Inflow:', summaryData.totalInflow],
+            ['Total Cash Outflow:', summaryData.totalOutflow],
+            ['Minimum Balance:', summaryData.minBalance],
+            ['Final Balance:', summaryData.finalBalance]
+        ];
+        const summaryWS = XLSX.utils.aoa_to_sheet(summarySheetData);
+        XLSX.utils.book_append_sheet(wb, summaryWS, "Summary");
+        
+        // 2. Cash Flow Sheet
+        const cashFlowHeaders = ['Date', 'Day', 'Transaction Details', 'Transaction Head', 'Cash Outflow', 'Cash Inflow', 'Balance'];
+        const cashFlowRows = cashFlowData.map(row => [
+            formatDate(row.date),
+            row.day,
+            row.details,
+            row.head,
+            row.outflow || 0,
+            row.inflow || 0,
+            row.balance
+        ]);
+        
+        const cashFlowDataForExcel = [cashFlowHeaders, ...cashFlowRows];
+        const cashFlowWS = XLSX.utils.aoa_to_sheet(cashFlowDataForExcel);
+        
+        // Set column widths
+        cashFlowWS['!cols'] = [
+            {wch: 12}, // Date
+            {wch: 6},  // Day
+            {wch: 50}, // Transaction Details
+            {wch: 20}, // Transaction Head
+            {wch: 15}, // Cash Outflow
+            {wch: 15}, // Cash Inflow
+            {wch: 15}  // Balance
+        ];
+        
+        XLSX.utils.book_append_sheet(wb, cashFlowWS, "Cash Flow");
+        
+        // 3. Input Parameters Sheet
+        const inputs = collectInputValues();
+        const inputData = [
+            ['Input Parameters'],
+            [''],
+            ['Project Setup'],
+            ['Start Date:', inputs.startDate],
+            ['Initial Balance:', inputs.initialBalance],
+            [''],
+            ['Order Quantities'],
+            ['October (Cycles 1-4):', inputs.orderQuantities.month1],
+            ['November (Cycles 5-8):', inputs.orderQuantities.month2],
+            ['December (Cycles 9-13):', inputs.orderQuantities.month3],
+            [''],
+            ['Costs'],
+            ['Steel Cost per Unit:', inputs.steelCost],
+            ['Bought-out Cost per Unit:', inputs.boughtOutCost],
+            ['Labour Cost per Unit:', inputs.labourCost],
+            ['Fixed Monthly Costs:', inputs.fixedCosts],
+            [''],
+            ['Revenue'],
+            ['Cash In Per Unit:', inputs.cashInPerUnit],
+            [''],
+            ['Settings'],
+            ['GST Applied:', inputs.applyGST ? 'Yes' : 'No'],
+            ['GST Rate:', inputs.applyGST ? inputs.gstRate + '%' : 'N/A'],
+            ['Payment Delay Applied:', inputs.applyDelay ? 'Yes' : 'No'],
+            ['Advance Delay Days:', inputs.applyDelay ? inputs.advanceDelayDays : 'N/A'],
+            ['Final Delay Days:', inputs.applyDelay ? inputs.finalDelayDays : 'N/A']
+        ];
+        
+        const inputWS = XLSX.utils.aoa_to_sheet(inputData);
+        inputWS['!cols'] = [{wch: 30}, {wch: 20}];
+        XLSX.utils.book_append_sheet(wb, inputWS, "Input Parameters");
+        
+        // Generate filename with date
+        const filename = `Working_Capital_Calculator_${new Date().toISOString().split('T')[0]}.xlsx`;
+        
+        // Write the file
+        XLSX.writeFile(wb, filename);
+        } catch (error) {
+            console.error('Error during Excel export:', error);
+            alert('Error exporting to Excel: ' + error.message);
+    }
+    console.log('Excel export completed');
 }
 
 // Utility Functions
@@ -1934,10 +2255,16 @@ function generateCashFlowGraph() {
                     borderColor: '#66FCF1',
                     backgroundColor: 'rgba(102, 252, 241, 0.1)',
                     borderWidth: 2,
-                    pointBackgroundColor: '#66FCF1',
+                    pointBackgroundColor: function(context) {
+                        const value = context.parsed.y;
+                        return value <= 0 ? '#FC6666' : '#66FCF1';
+                    },
                     pointBorderColor: '#45A29E',
-                    pointRadius: 3,
-                    pointHoverRadius: 5,
+                    pointRadius: function(context) {
+                        const value = context.parsed.y;
+                        return value <= 0 ? 4 : 3;  // Slightly larger when zero/negative
+                    },
+                    pointHoverRadius: 6,
                     tension: 0.1,
                     order: 1
                 }
