@@ -95,8 +95,24 @@
 
       <section id="working-capital-simulator" class="content-section">
         <h2>2. Working Capital Simulator</h2>
-        <div id="calculator-tabs"></div>
-        <div id="calculator-views"></div>
+        
+        <!-- Tab Navigation -->
+        <div class="calculator-tab-navigation">
+          <button class="calculator-tab-button active" onclick="showCalculatorTab('cashflow')">Cash Flow Simulator</button>
+          <button class="calculator-tab-button" onclick="showCalculatorTab('pnl')">Profit & Loss Statement</button>
+          <button class="calculator-tab-button" onclick="showCalculatorTab('balance')">Balance Sheet</button>
+        </div>
+
+        <!-- Tab Contents -->
+        <div id="cashflow-tab" class="calculator-tab-content active">
+          <!-- Content will be loaded here -->
+        </div>
+        <div id="pnl-tab" class="calculator-tab-content">
+          <!-- Content will be loaded here -->
+        </div>
+        <div id="balance-tab" class="calculator-tab-content">
+          <!-- Content will be loaded here -->
+        </div>
       </section>
       <section id="contribution-equity" class="content-section">
         <h2>3. Contribution & Equity Builder</h2>
@@ -300,25 +316,18 @@
     </main>
   </div>
 
+  <!-- External Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  
   <!-- Main App Logic -->
   <script src="scripts/jvStore.js"></script>
   <script src="scripts/main.js"></script>
   <script src="modules/calculator/js/script.js"></script>
-  <script>
+<script>
     window.addEventListener("DOMContentLoaded", () => {
-      const viewContainer = document.getElementById("calculator-views");
-
-      const loadComponent = async (file) => {
-        const res = await fetch(file);
-        const html = await res.text();
-        const wrapper = document.createElement("div");
-        wrapper.innerHTML = html;
-        viewContainer.appendChild(wrapper);
-      };
-
-      loadComponent("modules/calculator/components/cashflow-form.html");
-      loadComponent("modules/calculator/components/pnl-statement.html");
-      loadComponent("modules/calculator/components/balance-sheet.html");
+      // Initialize the calculator module after DOM is ready
+      initializeCalculatorModule();
     });
   </script>
 </body>

@@ -257,7 +257,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   
   // Initialize default values on page load
-  updateEquityDisplay();
+  updateEquityDisplay();  
   
   // Listen for jvStore changes
   jvStore.subscribe(function(key, value) {
@@ -265,27 +265,6 @@ document.addEventListener("DOMContentLoaded", () => {
       updateContributionTable();
     }
   });
-
-  // === Section 3: B:C Slider Logic ===
-  const bcSlider = document.getElementById("bc-split");
-  const bDisplay = document.getElementById("split-b");
-  const cDisplay = document.getElementById("split-c");
-
-  if (bcSlider && bDisplay && cDisplay) {
-  bcSlider.addEventListener("input", () => {
-      const bPercent = parseInt(bcSlider.value);
-      const cPercent = 100 - bPercent;
-      bDisplay.textContent = `${bPercent}%`;
-      cDisplay.textContent = `${cPercent}%`;
-
-      // Update jvStore with new split values
-      jvStore.set('bcSplit.b', bPercent);
-      jvStore.set('bcSplit.c', cPercent);
-
-      // Trigger equity calculation
-      updateEquityDisplay();
-    });
-  }
 
   // === Section 3: Track All Contribution Inputs ===
   // Save contribution values when they change
@@ -317,10 +296,57 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log('===================');
   };
 
-  // Subscribe to jvStore changes for debugging
-  jvStore.subscribe(function(key, value) {
-    console.log(`jvStore Update: ${key} changed to ${value}`);
-  });
-
   console.log('Test function ready. Run testJVStore() in console to see data.');
+  
+  // === Calculator Module Functions ===
+  window.showCalculatorTab = function(tabName) {
+    // Hide all calculator tabs
+    const allTabs = document.querySelectorAll('.calculator-tab-content');
+    allTabs.forEach(tab => tab.classList.remove('active'));
+    
+    // Remove active class from all calculator buttons
+    const allButtons = document.querySelectorAll('.calculator-tab-button');
+    allButtons.forEach(button => button.classList.remove('active'));
+    
+    // Show selected tab
+    const selectedTab = document.getElementById(tabName + '-tab');
+    if (selectedTab) {
+      selectedTab.classList.add('active');
+    }
+    
+    // Add active class to clicked button
+    event.target.classList.add('active');
+  };
+  
+  window.initializeCalculatorModule = async function() {
+    // Load calculator components
+    const loadComponent = async (file, targetId) => {
+      try {
+        const response = await fetch(file);
+        const html = await response.text();
+        const target = document.getElementById(targetId);
+        if (target) {
+          target.innerHTML = html;
+        }
+      } catch (error) {
+        console.error('Error loading component:', error);
+      }
+    };
+    
+    // Load all three calculator components
+    await loadComponent('modules/calculator/components/cashflow-form.html', 'cashflow-tab');
+    await loadComponent('modules/calculator/components/pnl-statement.html', 'pnl-tab');
+    await loadComponent('modules/calculator/components/balance-sheet.html', 'balance-tab');
+    
+    // Initialize calculator functionality after components are loaded
+    if (typeof initializeCashFlowForm === 'function') {
+      initializeCashFlowForm();
+    }
+    if (typeof initializePnLStatement === 'function') {
+      initializePnLStatement();
+    }
+    if (typeof initializeBalanceSheet === 'function') {
+      initializeBalanceSheet();
+    }
+  };
 });
