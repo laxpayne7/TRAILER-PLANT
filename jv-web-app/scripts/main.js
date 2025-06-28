@@ -134,6 +134,12 @@ document.addEventListener("DOMContentLoaded", () => {
   function generateRulerScale(total) {
     const rulerMarks = document.getElementById('ruler-marks');
     if (!rulerMarks) return;
+  
+    // Avoid divide-by-zero issues
+    if (total <= 0) {
+      rulerMarks.innerHTML = '';
+      return;
+    }
     
     rulerMarks.innerHTML = '';
     

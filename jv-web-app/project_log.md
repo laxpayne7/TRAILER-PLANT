@@ -198,3 +198,8 @@
 - ProjectLog.md will be updated **after each significant development step** or partner review
 - Use short, clear notes with date headers to track changes across Git and ChatGPT sessions
 - This file acts as external memory and development anchor when switching workspaces
+
+## 📅 2025-06-28
+
+### ✔ Bug Fix
+- Handled divide-by-zero in ruler scale function to prevent NaN positions when contributions total is zero
