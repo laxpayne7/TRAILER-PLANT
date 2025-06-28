@@ -130,7 +130,127 @@ function exportBalanceSheetPDF() {
 
 function exportBalanceSheetExcel() {
     console.log('Exporting Balance Sheet to Excel...');
-    alert('Excel export will be implemented in a future update');
+    
+    if (cashFlowData.length === 0) {
+        alert('Please generate the Balance Sheet first');
+        return;
+    }
+    
+    const bsData = calculateBalanceSheetData();
+    
+    // Create a new workbook
+    const wb = XLSX.utils.book_new();
+    
+    // 1. Balance Sheet
+    const balanceSheetData = [
+        ['BALANCE SHEET'],
+        ['As of ' + bsData.date],
+        [''],
+        ['ASSETS'],
+        ['Current Assets'],
+        ['  Cash and Cash Equivalents', '', bsData.assets.current.cash],
+        ['  Accounts Receivable', '', bsData.assets.current.accountsReceivable],
+        ['  GST Input Credit', '', bsData.assets.current.gstInputCredit],
+        ['Total Current Assets', '', bsData.assets.current.totalCurrent],
+        [''],
+        ['TOTAL ASSETS', '', bsData.assets.totalAssets],
+        [''],
+        ['LIABILITIES'],
+        ['Current Liabilities'],
+        ['  Accounts Payable', '', bsData.liabilities.current.accountsPayable],
+        ['  GST Payable', '', bsData.liabilities.current.gstPayable],
+        ['Total Current Liabilities', '', bsData.liabilities.current.totalCurrent],
+        [''],
+        ['TOTAL LIABILITIES', '', bsData.liabilities.totalLiabilities],
+        [''],
+        ['EQUITY'],
+        ['Partner B Investment', '', bsData.equity.partnerBInvestment],
+        ['Retained Earnings', '', bsData.equity.retainedEarnings],
+        [''],
+        ['TOTAL EQUITY', '', bsData.equity.totalEquity],
+        [''],
+        ['TOTAL LIABILITIES & EQUITY', '', bsData.totalLiabilitiesAndEquity]
+    ];
+    
+    const bsWS = XLSX.utils.aoa_to_sheet(balanceSheetData);
+    bsWS['!cols'] = [{wch: 30}, {wch: 10}, {wch: 20}];
+    
+    // Format numbers
+    for (let i = 3; i < balanceSheetData.length; i++) {
+        if (typeof balanceSheetData[i][2] === 'number') {
+            const cellAddress = XLSX.utils.encode_cell({r: i, c: 2});
+            if (!bsWS[cellAddress]) continue;
+            bsWS[cellAddress].z = '#,##0';
+        }
+    }
+    
+    XLSX.utils.book_append_sheet(wb, bsWS, "Balance Sheet");
+    
+    // 2. Financial Ratios Sheet
+    const workingCapital = bsData.assets.current.totalCurrent - bsData.liabilities.current.totalCurrent;
+    const currentRatio = bsData.liabilities.current.totalCurrent > 0 
+        ? (bsData.assets.current.totalCurrent / bsData.liabilities.current.totalCurrent).toFixed(2)
+        : 'N/A';
+    const debtToEquity = bsData.equity.totalEquity > 0 
+        ? (bsData.liabilities.totalLiabilities / bsData.equity.totalEquity).toFixed(2)
+        : '0.00';
+    
+    const ratiosData = [
+        ['Financial Ratios & Metrics'],
+        [''],
+        ['Metric', 'Value', 'Interpretation'],
+        ['Working Capital', workingCapital, workingCapital > 0 ? 'Positive - Good liquidity' : 'Negative - Liquidity concern'],
+        ['Current Ratio', currentRatio, currentRatio >= 1.5 ? 'Strong' : currentRatio >= 1 ? 'Adequate' : 'Weak'],
+        ['Debt to Equity Ratio', debtToEquity, debtToEquity < 0.5 ? 'Low leverage' : 'Moderate leverage'],
+        [''],
+        ['Asset Composition'],
+        ['Cash %', ((bsData.assets.current.cash / bsData.assets.totalAssets) * 100).toFixed(1) + '%'],
+        ['Receivables %', ((bsData.assets.current.accountsReceivable / bsData.assets.totalAssets) * 100).toFixed(1) + '%'],
+        [''],
+        ['Funding Sources'],
+        ['Partner B Investment %', ((bsData.equity.partnerBInvestment / bsData.totalLiabilitiesAndEquity) * 100).toFixed(1) + '%'],
+        ['Retained Earnings %', ((bsData.equity.retainedEarnings / bsData.totalLiabilitiesAndEquity) * 100).toFixed(1) + '%'],
+        ['External Liabilities %', ((bsData.liabilities.totalLiabilities / bsData.totalLiabilitiesAndEquity) * 100).toFixed(1) + '%']
+    ];
+    
+    const ratiosWS = XLSX.utils.aoa_to_sheet(ratiosData);
+    ratiosWS['!cols'] = [{wch: 25}, {wch: 20}, {wch: 30}];
+    XLSX.utils.book_append_sheet(wb, ratiosWS, "Financial Ratios");
+    
+    // 3. Working Capital Analysis
+    const wcData = [
+        ['Working Capital Analysis'],
+        [''],
+        ['Components', 'Amount'],
+        ['Current Assets'],
+        ['  Cash', bsData.assets.current.cash],
+        ['  Receivables', bsData.assets.current.accountsReceivable],
+        ['  GST Credit', bsData.assets.current.gstInputCredit],
+        ['Total Current Assets', bsData.assets.current.totalCurrent],
+        [''],
+        ['Current Liabilities'],
+        ['  Payables', bsData.liabilities.current.accountsPayable],
+        ['  GST Payable', bsData.liabilities.current.gstPayable],
+        ['Total Current Liabilities', bsData.liabilities.current.totalCurrent],
+        [''],
+        ['Net Working Capital', workingCapital],
+        [''],
+        ['Working Capital Requirement Analysis'],
+        ['Partner B Investment', bsData.equity.partnerBInvestment],
+        ['Working Capital as % of Investment', ((workingCapital / bsData.equity.partnerBInvestment) * 100).toFixed(1) + '%']
+    ];
+    
+    const wcWS = XLSX.utils.aoa_to_sheet(wcData);
+    wcWS['!cols'] = [{wch: 35}, {wch: 20}];
+    XLSX.utils.book_append_sheet(wb, wcWS, "Working Capital");
+    
+    // Generate filename
+    const filename = `Balance_Sheet_${bsData.date.replace(/\s/g, '_').replace(/,/g, '')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    
+    // Write the file
+    XLSX.writeFile(wb, filename);
+    
+    console.log('Balance Sheet Excel export completed');
 }
 
 // Generate Balance Sheet from cash flow data
@@ -151,23 +271,440 @@ function generateBalanceSheet() {
 // Placeholder functions to be implemented
 function calculateBalanceSheetData() {
     console.log('Calculating Balance Sheet data...');
-    // Will implement the calculation logic
-    return {};
+    
+    // Initialize Balance Sheet structure
+    const bsData = {
+        date: 'January 1, 2026',
+        assets: {
+            current: {
+                cash: 0,
+                accountsReceivable: 0,
+                gstInputCredit: 0,
+                totalCurrent: 0
+            },
+            totalAssets: 0
+        },
+        liabilities: {
+            current: {
+                accountsPayable: 0,
+                gstPayable: 0,
+                totalCurrent: 0
+            },
+            totalLiabilities: 0
+        },
+        equity: {
+            partnerBInvestment: 0,
+            retainedEarnings: 0,
+            totalEquity: 0
+        },
+        totalLiabilitiesAndEquity: 0
+    };
+    
+    // Get input values
+    const inputs = collectInputValues();
+    
+    // 1. ASSETS
+    
+    // Cash = Final balance from cash flow
+    bsData.assets.current.cash = summaryData.finalBalance;
+    
+    // Accounts Receivable = Any pending payments if delay is applied
+    if (inputs.applyDelay) {
+        // Check for pending payments in the last few days
+        const lastTransactions = cashFlowData.slice(-10);
+        lastTransactions.forEach(transaction => {
+            if (transaction.details.includes('Year-end Settlement') && 
+                transaction.head.includes('Sales')) {
+                bsData.assets.current.accountsReceivable += transaction.inflow;
+            }
+        });
+    }
+    
+    // GST Input Credit (accumulated from material purchases)
+    let totalGSTOnPurchases = 0;
+    let totalGSTOnSales = 0;
+    
+    if (inputs.applyGST) {
+        cashFlowData.forEach(transaction => {
+            if (transaction.head === 'Materials') {
+                // Extract GST portion from material purchases
+                const totalMaterialCost = transaction.outflow;
+                const baseAmount = totalMaterialCost / (1 + inputs.gstRate / 100);
+                const gstAmount = totalMaterialCost - baseAmount;
+                totalGSTOnPurchases += gstAmount;
+            }
+            
+            if (transaction.head.includes('Sales')) {
+                // Extract GST portion from sales
+                const totalSalesAmount = transaction.inflow;
+                const baseAmount = totalSalesAmount / (1 + inputs.gstRate / 100);
+                const gstAmount = totalSalesAmount - baseAmount;
+                totalGSTOnSales += gstAmount;
+            }
+        });
+        
+        // Net GST position
+        const netGST = totalGSTOnSales - totalGSTOnPurchases;
+        if (netGST < 0) {
+            bsData.assets.current.gstInputCredit = Math.abs(netGST);
+        } else {
+            bsData.liabilities.current.gstPayable = netGST;
+        }
+    }
+    
+    // Calculate total current assets
+    bsData.assets.current.totalCurrent = 
+        bsData.assets.current.cash + 
+        bsData.assets.current.accountsReceivable + 
+        bsData.assets.current.gstInputCredit;
+    
+    bsData.assets.totalAssets = bsData.assets.current.totalCurrent;
+    
+    // 2. LIABILITIES
+    
+    // Accounts Payable = December labour and fixed costs (paid on Jan 1)
+    let decemberLabour = 0;
+    let decemberFixed = 0;
+    
+    // Find December settlement transactions
+    cashFlowData.forEach(transaction => {
+        if (transaction.details.includes('December') && 
+            transaction.details.includes('Year-end settlement')) {
+            if (transaction.head === 'Labour') {
+                decemberLabour = transaction.outflow;
+            } else if (transaction.head === 'Fixed Costs') {
+                decemberFixed = transaction.outflow;
+            }
+        }
+    });
+    
+    bsData.liabilities.current.accountsPayable = decemberLabour + decemberFixed;
+    
+    // Calculate total current liabilities
+    bsData.liabilities.current.totalCurrent = 
+        bsData.liabilities.current.accountsPayable + 
+        bsData.liabilities.current.gstPayable;
+    
+    bsData.liabilities.totalLiabilities = bsData.liabilities.current.totalCurrent;
+    
+    // 3. EQUITY
+    
+    // Partner B Investment
+    bsData.equity.partnerBInvestment = summaryData.partnerInvestment;
+    
+    // Retained Earnings = Total Inflow - Total Outflow - Partner B Investment
+    bsData.equity.retainedEarnings = 
+        summaryData.totalInflow - summaryData.totalOutflow - summaryData.partnerInvestment;
+    
+    // Total Equity
+    bsData.equity.totalEquity = 
+        bsData.equity.partnerBInvestment + 
+        bsData.equity.retainedEarnings;
+    
+    // Total Liabilities and Equity
+    bsData.totalLiabilitiesAndEquity = 
+        bsData.liabilities.totalLiabilities + 
+        bsData.equity.totalEquity;
+    
+    // Verify balance sheet equation
+    const difference = Math.abs(bsData.assets.totalAssets - bsData.totalLiabilitiesAndEquity);
+    if (difference > 1) { // Allow for small rounding differences
+        console.warn('Balance Sheet does not balance!', {
+            assets: bsData.assets.totalAssets,
+            liabilitiesAndEquity: bsData.totalLiabilitiesAndEquity,
+            difference: difference
+        });
+    }
+    
+    return bsData;
 }
 
 function displayBalanceSheet(data) {
     console.log('Displaying Balance Sheet...');
-    // Will implement the display logic
+    
+    const bsContainer = document.querySelector('.balance-sheet-container');
+    if (!bsContainer) return;
+    
+    let bsHTML = `
+        <table class="balance-sheet-table">
+            <thead>
+                <tr>
+                    <th colspan="2">BALANCE SHEET</th>
+                </tr>
+                <tr>
+                    <th colspan="2" class="date-header">As of ${data.date}</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- ASSETS -->
+                <tr class="section-header">
+                    <td colspan="2">ASSETS</td>
+                </tr>
+                <tr class="subsection">
+                    <td class="indent-1">Current Assets</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="indent-2">Cash and Cash Equivalents</td>
+                    <td class="amount">${formatCurrency(data.assets.current.cash)}</td>
+                </tr>`;
+    
+    if (data.assets.current.accountsReceivable > 0) {
+        bsHTML += `
+                <tr>
+                    <td class="indent-2">Accounts Receivable</td>
+                    <td class="amount">${formatCurrency(data.assets.current.accountsReceivable)}</td>
+                </tr>`;
+    }
+    
+    if (data.assets.current.gstInputCredit > 0) {
+        bsHTML += `
+                <tr>
+                    <td class="indent-2">GST Input Credit</td>
+                    <td class="amount">${formatCurrency(data.assets.current.gstInputCredit)}</td>
+                </tr>`;
+    }
+    
+    bsHTML += `
+                <tr class="subtotal">
+                    <td class="indent-1">Total Current Assets</td>
+                    <td class="amount">${formatCurrency(data.assets.current.totalCurrent)}</td>
+                </tr>
+                <tr class="total-row">
+                    <td>TOTAL ASSETS</td>
+                    <td class="amount">${formatCurrency(data.assets.totalAssets)}</td>
+                </tr>
+                
+                <!-- LIABILITIES -->
+                <tr class="section-header">
+                    <td colspan="2">LIABILITIES</td>
+                </tr>
+                <tr class="subsection">
+                    <td class="indent-1">Current Liabilities</td>
+                    <td></td>
+                </tr>`;
+    
+    if (data.liabilities.current.accountsPayable > 0) {
+        bsHTML += `
+                <tr>
+                    <td class="indent-2">Accounts Payable</td>
+                    <td class="amount">${formatCurrency(data.liabilities.current.accountsPayable)}</td>
+                </tr>`;
+    }
+    
+    if (data.liabilities.current.gstPayable > 0) {
+        bsHTML += `
+                <tr>
+                    <td class="indent-2">GST Payable</td>
+                    <td class="amount">${formatCurrency(data.liabilities.current.gstPayable)}</td>
+                </tr>`;
+    }
+    
+    bsHTML += `
+                <tr class="subtotal">
+                    <td class="indent-1">Total Current Liabilities</td>
+                    <td class="amount">${formatCurrency(data.liabilities.current.totalCurrent)}</td>
+                </tr>
+                <tr class="total-row">
+                    <td>TOTAL LIABILITIES</td>
+                    <td class="amount">${formatCurrency(data.liabilities.totalLiabilities)}</td>
+                </tr>
+                
+                <!-- EQUITY -->
+                <tr class="section-header">
+                    <td colspan="2">EQUITY</td>
+                </tr>
+                <tr>
+                    <td class="indent-1">Partner B Investment</td>
+                    <td class="amount">${formatCurrency(data.equity.partnerBInvestment)}</td>
+                </tr>
+                <tr>
+                    <td class="indent-1">Retained Earnings</td>
+                    <td class="amount ${data.equity.retainedEarnings >= 0 ? '' : 'negative'}">${formatCurrency(data.equity.retainedEarnings)}</td>
+                </tr>
+                <tr class="total-row">
+                    <td>TOTAL EQUITY</td>
+                    <td class="amount">${formatCurrency(data.equity.totalEquity)}</td>
+                </tr>
+                
+                <!-- TOTAL -->
+                <tr class="grand-total">
+                    <td>TOTAL LIABILITIES & EQUITY</td>
+                    <td class="amount">${formatCurrency(data.totalLiabilitiesAndEquity)}</td>
+                </tr>
+            </tbody>
+        </table>
+    `;
+    
+    bsContainer.innerHTML = bsHTML;
 }
 
 function updateBalanceSheetMetrics(data) {
     console.log('Updating Balance Sheet metrics...');
-    // Will implement the metrics update
+    
+    // Calculate Working Capital (Current Assets - Current Liabilities)
+    const workingCapital = data.assets.current.totalCurrent - data.liabilities.current.totalCurrent;
+    const workingCapitalElement = document.getElementById('working-capital');
+    if (workingCapitalElement) {
+        workingCapitalElement.textContent = formatCurrency(workingCapital);
+        workingCapitalElement.className = workingCapital >= 0 ? 'metric-value positive' : 'metric-value negative';
+    }
+    
+    // Calculate Current Ratio (Current Assets / Current Liabilities)
+    const currentRatio = data.liabilities.current.totalCurrent > 0 
+        ? (data.assets.current.totalCurrent / data.liabilities.current.totalCurrent).toFixed(2)
+        : 'N/A';
+    const currentRatioElement = document.getElementById('current-ratio');
+    if (currentRatioElement) {
+        currentRatioElement.textContent = currentRatio;
+        if (currentRatio !== 'N/A') {
+            currentRatioElement.className = currentRatio >= 1.5 ? 'metric-value positive' : 
+                                          currentRatio >= 1.0 ? 'metric-value' : 'metric-value negative';
+        }
+    }
+    
+    // Display Cash Position
+    const cashPositionElement = document.getElementById('cash-position');
+    if (cashPositionElement) {
+        cashPositionElement.textContent = formatCurrency(data.assets.current.cash);
+        cashPositionElement.className = data.assets.current.cash >= 0 ? 'metric-value positive' : 'metric-value negative';
+    }
 }
 
 function generateBalanceSheetInsights(data) {
     console.log('Generating Balance Sheet insights...');
-    // Will implement the insights generation
+    
+    const insightsContainer = document.querySelector('.bs-insights-container');
+    if (!insightsContainer) return;
+    
+    const insights = [];
+    
+    // 1. Working Capital Analysis
+    const workingCapital = data.assets.current.totalCurrent - data.liabilities.current.totalCurrent;
+    const workingCapitalRatio = (workingCapital / data.assets.totalAssets * 100).toFixed(1);
+    
+    if (workingCapital > 0) {
+        insights.push({
+            type: 'positive',
+            icon: '✓',
+            text: `Positive working capital of ${formatCurrency(workingCapital)} (${workingCapitalRatio}% of total assets) indicates good liquidity`
+        });
+    } else {
+        insights.push({
+            type: 'negative',
+            icon: '!',
+            text: `Negative working capital of ${formatCurrency(Math.abs(workingCapital))} requires immediate attention`
+        });
+    }
+    
+    // 2. Current Ratio Analysis
+    const currentRatio = data.liabilities.current.totalCurrent > 0 
+        ? (data.assets.current.totalCurrent / data.liabilities.current.totalCurrent).toFixed(2)
+        : 999;
+    
+    if (currentRatio === 999) {
+        insights.push({
+            type: 'positive',
+            icon: '✓',
+            text: `No current liabilities - excellent financial position`
+        });
+    } else if (currentRatio >= 2.0) {
+        insights.push({
+            type: 'positive',
+            icon: '✓',
+            text: `Current ratio of ${currentRatio} shows strong ability to meet short-term obligations`
+        });
+    } else if (currentRatio >= 1.0) {
+        insights.push({
+            type: 'neutral',
+            icon: '→',
+            text: `Current ratio of ${currentRatio} is adequate but could be improved`
+        });
+    } else {
+        insights.push({
+            type: 'negative',
+            icon: '!',
+            text: `Current ratio of ${currentRatio} indicates potential liquidity issues`
+        });
+    }
+    
+    // 3. Cash Position
+    const cashToAssets = (data.assets.current.cash / data.assets.totalAssets * 100).toFixed(1);
+    insights.push({
+        type: 'info',
+        icon: '₹',
+        text: `Cash represents ${cashToAssets}% of total assets (${formatCurrency(data.assets.current.cash)})`
+    });
+    
+    // 4. Leverage Analysis
+    const debtToEquity = data.equity.totalEquity > 0 
+        ? (data.liabilities.totalLiabilities / data.equity.totalEquity).toFixed(2)
+        : 0;
+    
+    if (debtToEquity === 0) {
+        insights.push({
+            type: 'positive',
+            icon: '✓',
+            text: `Zero debt position provides maximum financial flexibility`
+        });
+    } else if (debtToEquity < 0.5) {
+        insights.push({
+            type: 'positive',
+            icon: '✓',
+            text: `Low debt-to-equity ratio of ${debtToEquity} indicates conservative capital structure`
+        });
+    } else {
+        insights.push({
+            type: 'neutral',
+            icon: '→',
+            text: `Debt-to-equity ratio of ${debtToEquity} - monitor leverage levels`
+        });
+    }
+    
+    // 5. GST Position
+    if (data.assets.current.gstInputCredit > 0) {
+        insights.push({
+            type: 'info',
+            icon: '📊',
+            text: `GST input credit of ${formatCurrency(data.assets.current.gstInputCredit)} can be claimed`
+        });
+    } else if (data.liabilities.current.gstPayable > 0) {
+        insights.push({
+            type: 'info',
+            icon: '📊',
+            text: `GST payable of ${formatCurrency(data.liabilities.current.gstPayable)} due to authorities`
+        });
+    }
+    
+    // 6. Profitability Impact
+    if (data.equity.retainedEarnings > 0) {
+        const roe = (data.equity.retainedEarnings / data.equity.totalEquity * 100).toFixed(1);
+        insights.push({
+            type: 'positive',
+            icon: '↑',
+            text: `Positive retained earnings of ${formatCurrency(data.equity.retainedEarnings)} (ROE: ${roe}%)`
+        });
+    } else if (data.equity.retainedEarnings < 0) {
+        insights.push({
+            type: 'negative',
+            icon: '↓',
+            text: `Accumulated losses of ${formatCurrency(Math.abs(data.equity.retainedEarnings))} need to be addressed`
+        });
+    }
+    
+    // Generate HTML for insights
+    let insightsHTML = '<ul class="insights-list">';
+    insights.forEach(insight => {
+        insightsHTML += `
+            <li class="insight-item ${insight.type}">
+                <span class="insight-icon">${insight.icon}</span>
+                <span class="insight-text">${insight.text}</span>
+            </li>
+        `;
+    });
+    insightsHTML += '</ul>';
+    
+    insightsContainer.innerHTML = insightsHTML;
 }
 
 // P&L Statement Functions
@@ -191,7 +728,104 @@ function exportPnLPDF() {
 
 function exportPnLExcel() {
     console.log('Exporting P&L to Excel...');
-    alert('Excel export will be implemented in a future update');
+    
+    if (cashFlowData.length === 0) {
+        alert('Please generate the P&L statement first');
+        return;
+    }
+    
+    // Get current period
+    const period = document.getElementById('pnl-period').value;
+    const pnlData = calculatePnLData(period);
+    
+    // Create a new workbook
+    const wb = XLSX.utils.book_new();
+    
+    // 1. P&L Statement Sheet
+    const pnlStatementData = [
+        ['PROFIT & LOSS STATEMENT'],
+        ['Period:', getPeriodLabel(period)],
+        [''],
+        ['REVENUE'],
+        ['Sales Revenue (' + pnlData.revenue.unitsSold + ' units)', '', pnlData.revenue.gross],
+        ['Net Revenue', '', pnlData.revenue.net],
+        [''],
+        ['COST OF GOODS SOLD'],
+        ['Material Costs'],
+        ['  Steel Materials', '', pnlData.cogs.materials.steel],
+        ['  Bought-out Materials', '', pnlData.cogs.materials.boughtOut],
+        ['Total Material Costs', '', pnlData.cogs.materials.total],
+        ['Direct Labour', '', pnlData.cogs.labour],
+        ['Total COGS', '', pnlData.cogs.total],
+        [''],
+        ['GROSS PROFIT', '', pnlData.grossProfit],
+        ['Gross Margin %', '', pnlData.grossMarginPercent.toFixed(1) + '%'],
+        [''],
+        ['OPERATING EXPENSES'],
+        ['Fixed Monthly Costs', '', pnlData.operatingExpenses.fixed],
+        ['Total Operating Expenses', '', pnlData.operatingExpenses.fixed],
+        [''],
+        ['NET PROFIT BEFORE TAX', '', pnlData.netProfit],
+        ['Net Margin %', '', pnlData.netMarginPercent.toFixed(1) + '%']
+    ];
+    
+    const pnlWS = XLSX.utils.aoa_to_sheet(pnlStatementData);
+    pnlWS['!cols'] = [{wch: 30}, {wch: 10}, {wch: 20}];
+    
+    // Format numbers
+    for (let i = 4; i < pnlStatementData.length; i++) {
+        if (typeof pnlStatementData[i][2] === 'number') {
+            const cellAddress = XLSX.utils.encode_cell({r: i, c: 2});
+            if (!pnlWS[cellAddress]) continue;
+            pnlWS[cellAddress].z = '#,##0';
+        }
+    }
+    
+    XLSX.utils.book_append_sheet(wb, pnlWS, "P&L Statement");
+    
+    // 2. Monthly Breakdown Sheet
+    const monthlyData = [
+        ['Monthly Revenue Breakdown'],
+        [''],
+        ['Month', 'Units Sold', 'Revenue'],
+        ['October', pnlData.revenue.monthlyBreakdown.october.units, pnlData.revenue.monthlyBreakdown.october.amount],
+        ['November', pnlData.revenue.monthlyBreakdown.november.units, pnlData.revenue.monthlyBreakdown.november.amount],
+        ['December', pnlData.revenue.monthlyBreakdown.december.units, pnlData.revenue.monthlyBreakdown.december.amount],
+        [''],
+        ['Total', pnlData.revenue.unitsSold, pnlData.revenue.gross]
+    ];
+    
+    const monthlyWS = XLSX.utils.aoa_to_sheet(monthlyData);
+    monthlyWS['!cols'] = [{wch: 15}, {wch: 15}, {wch: 20}];
+    XLSX.utils.book_append_sheet(wb, monthlyWS, "Monthly Breakdown");
+    
+    // 3. Key Metrics Sheet
+    const metricsData = [
+        ['Key Financial Metrics'],
+        [''],
+        ['Metric', 'Value'],
+        ['Revenue per Unit', pnlData.revenue.gross / pnlData.revenue.unitsSold],
+        ['Material Cost per Unit', pnlData.cogs.materials.total / pnlData.revenue.unitsSold],
+        ['Labour Cost per Unit', pnlData.cogs.labour / pnlData.revenue.unitsSold],
+        ['Total COGS per Unit', pnlData.cogs.total / pnlData.revenue.unitsSold],
+        ['Gross Profit per Unit', pnlData.grossProfit / pnlData.revenue.unitsSold],
+        [''],
+        ['Gross Margin %', pnlData.grossMarginPercent.toFixed(2) + '%'],
+        ['Net Margin %', pnlData.netMarginPercent.toFixed(2) + '%'],
+        ['Operating Expense Ratio', ((pnlData.operatingExpenses.fixed / pnlData.revenue.net) * 100).toFixed(2) + '%']
+    ];
+    
+    const metricsWS = XLSX.utils.aoa_to_sheet(metricsData);
+    metricsWS['!cols'] = [{wch: 25}, {wch: 20}];
+    XLSX.utils.book_append_sheet(wb, metricsWS, "Key Metrics");
+    
+    // Generate filename
+    const filename = `PnL_Statement_${getPeriodLabel(period).replace(/\s/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    
+    // Write the file
+    XLSX.writeFile(wb, filename);
+    
+    console.log('P&L Excel export completed');
 }
 
 // Generate P&L Statement from cash flow data
@@ -1401,8 +2035,112 @@ function collectInputValues() {
 // Export to Excel function
 function exportToExcel() {
     console.log('Exporting to Excel...');
-    // This will be implemented in Phase 4
-    alert('Export functionality will be implemented in Phase 4');
+
+    // Debug: Check if XLSX is available
+    if (typeof XLSX === 'undefined') {
+        alert('Excel export library not loaded. Please refresh the page and try again.');
+        console.error('XLSX is not defined');
+        return;
+    }
+    
+    if (cashFlowData.length === 0) {
+        alert('Please run the simulation first');
+        return;
+    }
+    
+    try{
+        // Create a new workbook
+        const wb = XLSX.utils.book_new();
+        console.log('Workbook created:', wb);    
+        
+        // 1. Summary Sheet
+        const summarySheetData = [
+            ['Working Capital Calculator - Summary'],
+            ['Generated on:', new Date().toLocaleDateString()],
+            [''],
+            ['Key Metrics'],
+            ['Partner B Investment:', summaryData.partnerInvestment],
+            ['Total Cash Inflow:', summaryData.totalInflow],
+            ['Total Cash Outflow:', summaryData.totalOutflow],
+            ['Minimum Balance:', summaryData.minBalance],
+            ['Final Balance:', summaryData.finalBalance]
+        ];
+        const summaryWS = XLSX.utils.aoa_to_sheet(summarySheetData);
+        XLSX.utils.book_append_sheet(wb, summaryWS, "Summary");
+        
+        // 2. Cash Flow Sheet
+        const cashFlowHeaders = ['Date', 'Day', 'Transaction Details', 'Transaction Head', 'Cash Outflow', 'Cash Inflow', 'Balance'];
+        const cashFlowRows = cashFlowData.map(row => [
+            formatDate(row.date),
+            row.day,
+            row.details,
+            row.head,
+            row.outflow || 0,
+            row.inflow || 0,
+            row.balance
+        ]);
+        
+        const cashFlowDataForExcel = [cashFlowHeaders, ...cashFlowRows];
+        const cashFlowWS = XLSX.utils.aoa_to_sheet(cashFlowDataForExcel);
+        
+        // Set column widths
+        cashFlowWS['!cols'] = [
+            {wch: 12}, // Date
+            {wch: 6},  // Day
+            {wch: 50}, // Transaction Details
+            {wch: 20}, // Transaction Head
+            {wch: 15}, // Cash Outflow
+            {wch: 15}, // Cash Inflow
+            {wch: 15}  // Balance
+        ];
+        
+        XLSX.utils.book_append_sheet(wb, cashFlowWS, "Cash Flow");
+        
+        // 3. Input Parameters Sheet
+        const inputs = collectInputValues();
+        const inputData = [
+            ['Input Parameters'],
+            [''],
+            ['Project Setup'],
+            ['Start Date:', inputs.startDate],
+            ['Initial Balance:', inputs.initialBalance],
+            [''],
+            ['Order Quantities'],
+            ['October (Cycles 1-4):', inputs.orderQuantities.month1],
+            ['November (Cycles 5-8):', inputs.orderQuantities.month2],
+            ['December (Cycles 9-13):', inputs.orderQuantities.month3],
+            [''],
+            ['Costs'],
+            ['Steel Cost per Unit:', inputs.steelCost],
+            ['Bought-out Cost per Unit:', inputs.boughtOutCost],
+            ['Labour Cost per Unit:', inputs.labourCost],
+            ['Fixed Monthly Costs:', inputs.fixedCosts],
+            [''],
+            ['Revenue'],
+            ['Cash In Per Unit:', inputs.cashInPerUnit],
+            [''],
+            ['Settings'],
+            ['GST Applied:', inputs.applyGST ? 'Yes' : 'No'],
+            ['GST Rate:', inputs.applyGST ? inputs.gstRate + '%' : 'N/A'],
+            ['Payment Delay Applied:', inputs.applyDelay ? 'Yes' : 'No'],
+            ['Advance Delay Days:', inputs.applyDelay ? inputs.advanceDelayDays : 'N/A'],
+            ['Final Delay Days:', inputs.applyDelay ? inputs.finalDelayDays : 'N/A']
+        ];
+        
+        const inputWS = XLSX.utils.aoa_to_sheet(inputData);
+        inputWS['!cols'] = [{wch: 30}, {wch: 20}];
+        XLSX.utils.book_append_sheet(wb, inputWS, "Input Parameters");
+        
+        // Generate filename with date
+        const filename = `Working_Capital_Calculator_${new Date().toISOString().split('T')[0]}.xlsx`;
+        
+        // Write the file
+        XLSX.writeFile(wb, filename);
+        } catch (error) {
+            console.error('Error during Excel export:', error);
+            alert('Error exporting to Excel: ' + error.message);
+    }
+    console.log('Excel export completed');
 }
 
 // Utility Functions
@@ -1517,10 +2255,16 @@ function generateCashFlowGraph() {
                     borderColor: '#66FCF1',
                     backgroundColor: 'rgba(102, 252, 241, 0.1)',
                     borderWidth: 2,
-                    pointBackgroundColor: '#66FCF1',
+                    pointBackgroundColor: function(context) {
+                        const value = context.parsed.y;
+                        return value <= 0 ? '#FC6666' : '#66FCF1';
+                    },
                     pointBorderColor: '#45A29E',
-                    pointRadius: 3,
-                    pointHoverRadius: 5,
+                    pointRadius: function(context) {
+                        const value = context.parsed.y;
+                        return value <= 0 ? 4 : 3;  // Slightly larger when zero/negative
+                    },
+                    pointHoverRadius: 6,
                     tension: 0.1,
                     order: 1
                 }

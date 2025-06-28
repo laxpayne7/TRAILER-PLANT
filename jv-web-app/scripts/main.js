@@ -60,4 +60,17 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("JV Setup Details Saved ✅");
     });
   }
+    // === Section 3: B:C Slider Logic ===
+    const bcSlider = document.getElementById("bc-split");
+    const bDisplay = document.getElementById("split-b");
+    const cDisplay = document.getElementById("split-c");
+
+    if (bcSlider && bDisplay && cDisplay) {
+    bcSlider.addEventListener("input", () => {
+        const bPercent = parseInt(bcSlider.value);
+        const cPercent = 100 - bPercent;
+        bDisplay.textContent = `${bPercent}%`;
+        cDisplay.textContent = `${cPercent}%`;
+    });
+    }
 });

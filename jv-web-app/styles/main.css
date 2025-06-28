@@ -215,3 +215,44 @@ button#start-discussion {
 button#start-discussion:hover {
   background: var(--color-accent-dark);
 }
+
+/* === Section 3: Contribution & Equity Builder === */
+.contribution-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.contribution-table th,
+.contribution-table td {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--color-shadow);
+  font-size: 0.95rem;
+  text-align: left;
+}
+
+.contribution-table input[type="number"] {
+  width: 100%;
+  padding: 0.4rem;
+  background: var(--color-bg);
+  color: var(--color-text-main);
+  border: 1px solid var(--color-accent-dark);
+  border-radius: 4px;
+}
+
+#bc-split {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+#split-b, #split-c {
+  font-weight: bold;
+  color: var(--accent-primary);
+}
+
+#equity-chart {
+  max-width: 100%;
+  background: var(--color-bg);
+  border-radius: 4px;
+  padding: 1rem;
+}

@@ -93,17 +93,81 @@
         </div>
         </section>
 
-
       <section id="working-capital-simulator" class="content-section">
         <h2>2. Working Capital Simulator</h2>
         <div id="calculator-tabs"></div>
         <div id="calculator-views"></div>
       </section>
 
-      <section id="contribution-equity" class="content-section">
+        <section id="contribution-equity" class="content-section">
         <h2>3. Contribution & Equity Builder</h2>
-        <div class="placeholder"></div>
-      </section>
+
+        <!-- Manual Contribution Table -->
+        <div class="card">
+            <h3>Manual Contribution Entry</h3>
+            <table class="contribution-table">
+            <thead>
+                <tr>
+                <th>Partner</th>
+                <th>Description</th>
+                <th>Value (₹)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                <td>Partner A</td>
+                <td>Existing CapEx (Plant)</td>
+                <td><input type="number" id="capex-a" /></td>
+                </tr>
+                <tr>
+                <td>Partner B</td>
+                <td>Working Capital</td>
+                <td><input type="number" id="wc-b" /></td>
+                </tr>
+                <tr>
+                <td>Partner B</td>
+                <td>Market Access Value</td>
+                <td><input type="number" id="market-b" /></td>
+                </tr>
+                <tr>
+                <td>Partner C</td>
+                <td>Operations/Leadership Value</td>
+                <td><input type="number" id="ops-c" /></td>
+                </tr>
+                <tr>
+                <td>Partner BC</td>
+                <td>Plant Renovation & Setup</td>
+                <td><input type="number" id="setup-bc" value="5000000" disabled /></td>
+                </tr>
+            </tbody>
+            </table>
+        </div>
+
+        <!-- BC Split Tool -->
+        <div class="card">
+            <h3>Internal BC Split</h3>
+            <label for="bc-split">B:C Ratio (e.g. 70:30)</label>
+            <input type="range" id="bc-split" min="0" max="100" value="70" />
+            <p>B = <span id="split-b">70%</span>, C = <span id="split-c">30%</span></p>
+        </div>
+
+        <!-- Equity Visual -->
+        <div class="card">
+            <h3>Equity Split Visual</h3>
+            <canvas id="equity-chart" height="200"></canvas>
+        </div>
+
+        <!-- Contribution Notes -->
+        <div class="card">
+            <h3>Notes / Rationale</h3>
+            <textarea id="contribution-notes" rows="4" placeholder="Add comments on how values were determined..."></textarea>
+        </div>
+
+        <!-- Export Action -->
+        <div class="card">
+            <button id="export-contribution">Export to MoU</button>
+        </div>
+        </section>
 
       <section id="roles-responsibilities" class="content-section">
         <h2>4. Roles & Responsibilities</h2>
