@@ -38,12 +38,61 @@
     <main id="main-content">
         <section id="overview-setup" class="content-section active">
         <h2>1. Overview & Setup</h2>
-        <div style="margin-bottom: 1rem;">
-            <p style="font-family: var(--font-heading); font-size: 1.5rem;">Heading Font: The quick brown fox jumps over the lazy dog</p>
-            <p style="font-family: var(--font-body); font-size: 1rem;">Body Font: The quick brown fox jumps over the lazy dog</p>
+
+        <!-- JV Overview -->
+        <div class="card">
+            <label for="jv-summary"><strong>JV Overview:</strong></label>
+            <textarea id="jv-summary" rows="4" placeholder="Enter a summary of the JV's purpose, vision, and structure..."></textarea>
         </div>
-        <div class="placeholder">[Startup details go here]</div>
+
+        <!-- Partner Profile Editor -->
+        <div class="card">
+            <h3>Partner Profiles</h3>
+            <div class="partner-grid">
+            <div class="partner-profile">
+                <label>Name (A):</label>
+                <input type="text" id="partner-a" placeholder="Partner A Name" />
+                <label>Role:</label>
+                <input type="text" id="role-a" placeholder="Finance / CapEx" />
+                <label>Avatar:</label>
+                <input type="file" id="avatar-a" accept="image/*" />
+            </div>
+            <div class="partner-profile">
+                <label>Name (B):</label>
+                <input type="text" id="partner-b" placeholder="Partner B Name" />
+                <label>Role:</label>
+                <input type="text" id="role-b" placeholder="Market / Sales" />
+                <label>Avatar:</label>
+                <input type="file" id="avatar-b" accept="image/*" />
+            </div>
+            <div class="partner-profile">
+                <label>Name (C):</label>
+                <input type="text" id="partner-c" placeholder="Partner C Name" />
+                <label>Role:</label>
+                <input type="text" id="role-c" placeholder="Operations / Plant" />
+                <label>Avatar:</label>
+                <input type="file" id="avatar-c" accept="image/*" />
+            </div>
+            </div>
+        </div>
+
+        <!-- Project Timeline -->
+        <div class="card">
+            <h3>Project Timeline</h3>
+            <ul class="timeline">
+            <li><strong>Today:</strong> JV Planning Begins</li>
+            <li><strong>+1 Week:</strong> Financial Model Finalization</li>
+            <li><strong>+2 Weeks:</strong> MoU Draft Ready</li>
+            <li><strong>+3 Weeks:</strong> Legal Signing & Kickoff</li>
+            </ul>
+        </div>
+
+        <!-- Launch CTA -->
+        <div class="card">
+            <button id="start-discussion">🚀 Start Discussion</button>
+        </div>
         </section>
+
 
       <section id="working-capital-simulator" class="content-section">
         <h2>2. Working Capital Simulator</h2>

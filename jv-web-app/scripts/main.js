@@ -31,4 +31,33 @@ document.addEventListener("DOMContentLoaded", () => {
       if (target) target.classList.add("active");
     });
   });
+
+  // === Section 1: Save Overview & Setup Form ===
+  const form = document.getElementById("overview-setup-form");
+  if (form) {
+    const fields = [
+      "jv-name", "partner-a", "partner-b", "partner-c",
+      "start-date", "capex", "working-capital", "location"
+    ];
+
+    // Pre-fill values from localStorage
+    fields.forEach(id => {
+      const input = document.getElementById(id);
+      if (input && localStorage.getItem(id)) {
+        input.value = localStorage.getItem(id);
+      }
+    });
+
+    // Save on submit
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      fields.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+          localStorage.setItem(id, input.value);
+        }
+      });
+      alert("JV Setup Details Saved ✅");
+    });
+  }
 });

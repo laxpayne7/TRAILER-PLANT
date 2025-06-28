@@ -203,6 +203,34 @@ body {
 /* Input Section Styles */
 .input-section {
     margin-top: 40px;
+    max-height: 600px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 10px; /* Add padding for scrollbar */
+}
+
+/* Custom scrollbar for input section */
+.input-section::-webkit-scrollbar {
+    width: 8px;
+}
+
+.input-section::-webkit-scrollbar-track {
+    background: var(--primary-dark);
+    border-radius: 4px;
+}
+
+.input-section::-webkit-scrollbar-thumb {
+    background: var(--accent-secondary);
+    border-radius: 4px;
+}
+
+.input-section::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-primary);
+}
+
+/* Add some padding at the bottom of input section */
+.input-section .control-buttons {
+    margin-bottom: 20px; /* Extra space at bottom */
 }
 
 .section-title {
@@ -898,6 +926,135 @@ button:focus {
     font-size: 14px;
     line-height: 1.5;
     color: var(--text-light);
+}
+/* Balance Sheet Styles */
+.bs-features {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--secondary-dark);
+    border: 1px solid var(--accent-secondary);
+    border-radius: 12px;
+    padding: 16px 24px;
+    margin-bottom: 24px;
+}
+
+.bs-date {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.date-label {
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+.date-value {
+    color: var(--accent-primary);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.bs-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.bs-content {
+    display: grid;
+    grid-template-columns: 70% 28%;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.bs-statement {
+    background-color: var(--secondary-dark);
+    border: 1px solid var(--accent-secondary);
+    border-radius: 12px;
+    padding: 24px;
+}
+
+.bs-metrics {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.metric-card {
+    background-color: var(--secondary-dark);
+    border: 1px solid var(--accent-secondary);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+}
+
+.metric-card h4 {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.metric-value {
+    color: var(--accent-primary);
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.bs-insights {
+    background-color: var(--secondary-dark);
+    border: 1px solid var(--accent-secondary);
+    border-radius: 12px;
+    padding: 24px;
+}
+
+/* Balance Sheet Table Styles */
+.balance-sheet-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.balance-sheet-table thead th {
+    background-color: var(--primary-dark);
+    color: var(--accent-primary);
+    padding: 12px;
+    text-align: left;
+    border-bottom: 2px solid var(--accent-secondary);
+}
+
+.balance-sheet-table thead th:first-child {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.date-header {
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    color: var(--text-muted) !important;
+    padding: 8px 12px !important;
+}
+
+.balance-sheet-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(69, 162, 158, 0.1);
+}
+
+.balance-sheet-table .amount {
+    text-align: right;
+    font-family: 'Courier New', monospace;
+    font-weight: 500;
+}
+
+.grand-total td {
+    background-color: var(--primary-dark);
+    font-size: 16px;
+    font-weight: 700;
+    padding: 12px;
+    border-top: 3px double var(--accent-primary);
+    border-bottom: 3px double var(--accent-primary);
+    color: var(--accent-primary);
 }
 
 /* Responsive */
