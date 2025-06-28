@@ -10,6 +10,8 @@ async function loadComponent(componentPath, targetId) {
             initializeCashFlowForm();
         } else if (targetId === 'pnl-tab') {
             initializePnLStatement();
+        } else if (targetId === 'balance-tab') {
+            initializeBalanceSheet();
         }
     } catch (error) {
         console.error('Error loading component:', error);
@@ -83,6 +85,25 @@ function initializePnLStatement() {
     }
     
     const excelIcon = document.querySelector('.icon-excel');
+    if (excelIcon) {
+        excelIcon.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>';
+    }
+}
+
+// Initialize Balance Sheet functionality
+function initializeBalanceSheet() {
+    // Add SVG icons
+    const refreshIcon = document.querySelector('#balance-tab .icon-refresh');
+    if (refreshIcon) {
+        refreshIcon.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>';
+    }
+    
+    const pdfIcon = document.querySelector('#balance-tab .icon-pdf');
+    if (pdfIcon) {
+        pdfIcon.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>';
+    }
+    
+    const excelIcon = document.querySelector('#balance-tab .icon-excel');
     if (excelIcon) {
         excelIcon.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>';
     }
@@ -721,6 +742,8 @@ function generatePnLInsights(data) {
     
     insightsContainer.innerHTML = insightsHTML;
 }
+
+
 
 // Global variables to store simulation data
 let cashFlowData = [];
